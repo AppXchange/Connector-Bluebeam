@@ -1,0 +1,817 @@
+﻿https://bbdn.bluebeam.com/articles/getting-started/
+
+
+# Build
+cd desktop/connectors
+mkdir connector-bluebeam
+cd connector-bluebeam
+xchange connector new --name Bluebeam
+cd connector
+
+
+______
+
+
+# Auth
+https://bbdn.bluebeam.com/articles/authentication/
+xchange client new --type Http --auth-type OAuth2CodeFlow
+
+
+______
+
+
+## Module 1: Studio Sessions
+https://bbdn.bluebeam.com/articles/sessions/
+xchange module new --id sessions-1 --name Sessions --key sessions --version 1
+
+
+
+
+# Initialize Session
+xchange data-object new --module-id sessions-1 --name Session
+xchange action new --module-id sessions-1 --object-name Session --name Initialize
+
+
+1. Initialize Session
+The first phase of a Studio Session’s lifecycle is its creation. To begin, make a POST command to the Sessions endpoint with the following parameters.
+
+
+Endpoint
+https://studioapi.bluebeam.com/publicapi/v1/sessions
+
+
+Request Parameters
+
+
+Name        Description        Value Type / Possible Values
+Name        Session Name        String
+Notification        true: Current user will be subscribed to email notifications about changes to this Session.
+false: Current user will not be subscribed to email notifications about changes to this Session.        Boolean
+Restricted        true: to restrict the Session to only email addresses that have been invited or added.
+false: to leave the Session open to anyone who has the 9-digit Session ID.        Boolean
+SessionEndDate        Once this date is reached, all participants except for the host will be removed from the Session.        Must be formatted in UTC format
+DefaultPermissions        This permission set will apply to all users added to this Session except for the host (the current user). The host gets full control.        Define Types of permissions, and permissions themselves, below
+Permission        Description        Value Type / Possible Values
+Type        Type of permission        SaveCopy – Allow attendees to Save As.
+PrintCopy – Allow attendees to Print PDFs included in the Session.
+Markup – Allow attendees to place markups.
+AddDocuments Allow attendees to add new documents to the Session.
+FullControl – give attendees admin rights to the Session.
+MarkupAlert – allow attendees to send and receive markup alerts during the Session.
+Allow        Permission state        Allow, Deny, Default
+Session End Date:
+Session End Dates are not required, but if a Session End Date is selected, participants of the Session will be notified, via email, at 7 days, 2 days and 24 hours prior to the expiration date.
+
+
+cURL Example
+
+
+cURL https://studioapi.bluebeam.com/publicapi/v1/sessions \
+-H "Authorization: Bearer {valid access_token}" \
+-H "Content-Type: Application/JSON" \
+-d '{
+   "Name":"Pied Piper Acquisition Review",
+   "Notification": true,
+   "Restricted": true,
+   "SessionEndDate": "2016-08-17T21:09:07.5174221Z",
+   "DefaultPermissions":[  
+      {
+         "Type":"SaveCopy",
+         "Allow":"Allow"
+      },
+      {
+         "Type":"PrintCopy",
+         "Allow":"Allow"
+      },
+      {
+         "Type":"Markup",
+         "Allow":"Allow"
+      },
+      {
+         "Type":"MarkupAlert",
+         "Allow":"Allow"
+      },
+      {
+         "Type":"AddDocuments",
+         "Allow":"Deny"
+      }
+    ]
+ }' \
+-X POST
+Permissions:
+Current Studio users are often accustomed to specific Permissions defaults. It’s always a good idea to either check what the default permissions should be, or allow users to choose their permissions. When using the Studio API to set permissions, ‘Deny’ is the default value.
+
+
+Response Body
+
+
+{
+   "$id": "1",
+   "Id": "123-456-789"
+}
+
+
+# Add Files - Create Metadata Block
+xchange data-object new --module-id sessions-1 --name MetadataBlock
+xchange action new --module-id sessions-1 --object-name MetadataBlock --name Create
+
+
+a. Create Metadata Block
+Endpoint
+https://studioapi.bluebeam.com/publicapi/v1/sessions/{sessionId}/files
+
+
+Parameters
+
+
+Name        Description        Value Type / Possible Values
+Name        Name of file        String ending in “.pdf”
+Source        Source path. this may help you identify where the file came from later on in the process        String
+Size        File size; leave null for server to calculate        Integer
+CRC        Leave null for server to calculate        String
+cURL Example
+
+
+cURL https://studioapi.bluebeam.com/publicapi/v1/sessions/123-456-789/files \
+-H "Authorization: Bearer {valid access_token}" \
+-H "Content-Type: Application/JSON" \
+-d '{
+      "Name":"Pied_Piper_Acquisition.pdf",
+      "Source":"https://portfolio.raviga.com/primarybets/piedpiper/legaldocs/Pied_Piper_Acquisition.pdf"
+}' \
+-X POST
+Example Response
+
+
+{
+   "Id": 1234567
+   "UploadUrl":"{upload file to this URL}"
+   "UploadContentType":"Application/PDF"
+}
+Upload Window
+Upload URL is valid for 10 minutes to start upload
+
+
+# Add Files - Upload the file to AWS
+xchange data-object new --module-id sessions-1 --name FileToAWS
+xchange action new --module-id sessions-1 --object-name FileToAWS --name Upload
+
+
+b. Upload the file to AWS
+Once you have a metadata block placeholder for your file, make a PUT request to the returned UploadURL from the previous POST request. In your PUT request, be sure to include the following in the header:
+
+
+x-amz-server-side-encryption” with value “AES256”
+“Content-Type” with value “application/pdf”
+
+
+# Add Files - Confirm Upload
+xchange data-object new --module-id sessions-1 --name ConfirmUpload
+
+
+c. Confirm Upload
+Endpoint
+https://studioapi.bluebeam.com/publicapi/v1/sessions/{sessionId}/files/{id}/confirm-upload
+
+
+cURL Example
+
+
+cURL https://studioapi.bluebeam.com/publicapi/v1/sessions/123-456-789/files/1234567/confirm-upload \
+-H "Authorization: Bearer {valid access_token}" \
+-X POST
+Response
+If successful, you will get a 204 response. For errors, visit our Common Response Codes page.
+
+
+
+
+# Add Users
+xchange data-object new --module-id sessions-1 --name User
+xchange action new --module-id sessions-1 --object-name User --name Invite
+
+
+3. Add Users
+Once you have the Session created and the files uploaded, add the users to the Session. The initiator of the Session (the current user) will automatically become the Host of the Session, and therefore automatically added to the Session’s users. More users can always be added while the Session is active. There are two methods for adding users:
+
+
+Method A. Invite User
+Invite User is best to invite users who may not yet have a Studio account. An email will be sent to the invitee with an opportunity to create a free Studio Account and download Bluebeam’s free PDF viewer, Vu, which can place markups in Studio Sessions.
+
+
+Endpoint
+https://studioapi.bluebeam.com/publicapi/v1/sessions/{sessionId}/invite
+
+
+Parameters
+
+
+Name        Description
+Email        Email address to send invitation to
+Message        Custom Message that will display in the email
+Example
+
+
+cURL https://studioapi.bluebeam.com/publicapi/v1/sessions/123-456-789/invite \
+-H "Authorization: Bearer {valid access_token}" \
+-H "Content-Type: Application/JSON" \
+-d '{
+      "Email":"gavin.belson@hooli.com",
+      "Message":"Please join this Session to review documents regarding the Pied Piper acquisition."
+}' \
+-X POST
+Response
+If successful, you will get a 204 response. For errors, visit our Common Response Codes page.
+
+
+OR
+Method B. Add User
+Add user is best to use if you know that the email address is already associated with a Studio account and you want them to be added to a Studio Session without opting in. If the user does not have an account, or if you are unsure if they do, choose the invite user method above. Using the Add User method, the user will be added to the Studio Session’s attendees, and the Studio Session will appear under their Attended Sessions within the Studio Tab of the Revu interface.
+
+
+Endpoint
+https://studioapi.bluebeam.com/publicapi/v1/sessions/{sessionId}/users
+
+
+Parameters
+
+
+Name        Description
+Email        Email address of known Studio account
+SendEmail        Boolean; True: send an email to the invitee, False: do not send an email notification to the invitee.
+Message        Custom Message that will display in the email, if the email is sent
+Example
+
+
+cURL https://studioapi.bluebeam.com/publicapi/v1/sessions/123-456-789/users
+-H "Authorization: Bearer {valid access_token}" \
+-H "Content-Type: Application/JSON" \
+-d '{
+      "Email": "peter.gregory@raviga.com",
+      "SendEmail": true,
+      "Message": "As requested, here is the Session to review the Pied Piper acquisition documents."
+}' \
+-X POST
+Response
+If successful, you will get a 204 response. For errors, visit our Common Response Codes page.
+
+
+Session Attendees Count toward Prime Users
+Note that all attendees in a Session will count toward the total number of users within the associated Studio Prime account. If the users are not Members of the Prime account, they will be listed as Collaborators. To learn more about Prime Members and Collaborators, visit our Studio Prime FAQ page.
+
+
+# Finalize Session - Set Status to Finalizing
+xchange data-object new --module-id sessions-1 --name Finalizing
+xchange action new --module-id sessions-1 --object-name Finalizing --name SetStatus
+
+a. Set Status to Finalizing
+Setting a Session’s Status to Finalizing removes all users from the Session, except the Host. This is done to prevent further changes to the Session files after they are downloaded.
+
+
+Endpoint
+https://studioapi.bluebeam.com/publicapi/v1/sessions/{id}
+
+
+Example
+
+
+cURL https://studioapi.bluebeam.com/publicapi/v1/sessions/123-456-789 \
+-H "Authorization: Bearer {valid access_token}" \
+-H "Content-Type: Application/JSON" \
+-d '{"Status": "Finalizing"}' \
+-X PUT
+
+# Finalize Session - Download the Marked Up Session Files / Create Snapshot
+xchange data-object new --module-id sessions-1 --name Snapshop
+xchange action new --module-id sessions-1 --object-name Snapshop --name Create
+
+i. Create a Snapshot
+While in a Session, PDFs and markups are stored separately. A Snapshot combines the PDF content with the markup layer into a single PDF so that the markups are viewable on the PDF outside of the Studio Session.
+
+
+Endpoint
+https://studioapi.bluebeam.com/publicapi/v1/sessions/{sessionId}/files/{id}/snapshot
+
+
+Example
+
+
+cURL https://studioapi.bluebeam.com/publicapi/v1/sessions/123-456-789/files/1234567/snapshot \
+-H "Authorization: Bearer {valid access_token}" \
+-X POST
+
+# Finalize Session - Download the Marked Up Session Files / Check Status of Snapshot, Download if Complete
+xchange data-object new --module-id sessions-1 --name Download
+
+
+
+ii. Check Status of Snapshot, Download if Complete
+Make a GET request to the Snapshot endpoint until the Status is either Complete or Error.
+
+
+If Error: We will include an error message that can be presented to the user.
+If Complete: use the DownloadUrl to download the Snapshot.
+Endpoint
+https://studioapi.bluebeam.com/publicapi/v1/sessions/{sessionId}/files/{id}/snapshot
+
+
+Example
+
+
+cURL https://studioapi.bluebeam.com/publicapi/v1/sessions/123-456-789/files/1234567/
+-H "Authorization: Bearer {valid access_token}" \
+-X GET
+Response Body
+
+
+{
+   "Status": "Complete",
+   "StatusTime": "{The last time the Status was changed}",
+   "LastSnapshotTime": "{Time of last successful Snapshot}",
+   "DownloadUrl": "{A download URL for the last successful Snapshot}"
+}
+Status Options
+
+
+Status        Description
+NoSnapshot        When a Snapshot has never been called on a file
+Requested        The Snapshot job has not yet started, but we received the request
+InProgress        The Snapshot job is in progress
+Complete        The Snapshot job is finished and can be downloaded via DownloadUrl
+Error        The Snapshot job failed. The status will include an error message
+
+
+
+
+# Close out the Session
+
+
+xchange action new --module-id sessions-1 --object-name Session --name Delete
+
+
+c. Close out the Session
+Now that you have the marked up PDF(s), you can dispose of the Session by sending a DELETE request to the Session ID endpoint.
+
+
+Endpoint
+https://studioapi.bluebeam.com/publicapi/v1/sessions/{id}
+
+
+Example for Closing out Session
+
+
+cURL https://studioapi.bluebeam.com/publicapi/v1/sessions/123-456-789 \
+-H "Authorization: Bearer {valid access_token}" \
+-H "Content-Type: Application/JSON" \
+-X DELETE
+
+
+______
+
+
+## Module 2: Event Notifications
+https://bbdn.bluebeam.com/articles/event-notifications/
+xchange module new --id notifications-1 --name Notifications --key notifications --version 1
+
+
+
+
+xchange data-object new --module-id notifications-1 --name Subscriptions
+
+
+
+Listing Subscriptions
+List All Subscriptions
+To get a list of all of a user’s subscriptions within a Studio Prime space, make a GET request to the subscriptions endpoint.
+
+
+Endpoint
+https://studioapi.bluebeam.com/PublicAPI/v1/notifications/subscriptions
+
+
+Example cURL Request
+cURL https://studioapi.bluebeam.com/PublicAPI/v1/notifications/subscriptions \
+-H "Authorization:Bearer {A Valid access_token}" \
+-X GET
+Example Response
+{  
+   "$id":"1",
+   "Subscriptions":[  
+      {  
+         "$id":"1",
+         "EndpointId":521,
+         "Resource":"/Primes/{Studio Prime ID}/Projects/{ProjectId}/",
+         "Source":"Studio",
+         "Status":"Active",
+         "SubscriptionId":1234,
+         "Uri":"{Your Callback URI}"
+      },
+      {  
+         "$id":"3",
+         "EndpointId":521,
+         "Resource":"/Primes/{Studio Prime ID}/Projects/{ProjectId}/{File ID}/",
+         "Source":"Studio",
+         "Status":"Active",
+         "SubscriptionId":2345,
+         "Uri":"{Your Callback URI}"
+      },
+      {  
+         "$id":"4",
+         "EndpointId":523,
+         "Resource":"/Primes/{Studio Prime ID}/Projects/{SessionId}/",
+         "Source":"Studio",
+         "Status":"Active",
+         "SubscriptionId":3456,
+         "Uri":"{Your Callback URI}"
+      },
+      {  
+         "$id":"5",
+         "EndpointId":522,
+         "Resource":"/Primes/{Studio Prime ID}/Sessions/{SessionId}/SessionDocuments/{SessionDocumentId}/",
+         "Source":"Studio",
+         "Status":"Active",
+         "SubscriptionId":4567,
+         "Uri":"{Your Callback URI}"
+      },
+      {  
+         "$id":"6",
+         "EndpointId":522,
+         "Resource":"/Primes/{Studio Prime ID}/Projects/{ProjectId}/",
+         "Source":"Studio",
+         "Status":"Active",
+         "SubscriptionId":5678,
+         "Uri":"{Your Callback URI}"
+      }
+   ],
+   "TotalCount":6
+}
+
+
+xchange data-object new --module-id notifications-1 --name Subscription
+
+List a Specific Subscription
+To get a specific subscription, make a GET request to the subscription endpoint, and include the ID of the subscription that was returned when the subscription was created.
+
+
+Endpoint
+https://studioapi.bluebeam.com/PublicAPI/v1/notifications/subscriptions/{subscription_id}
+
+
+Example cURL Request
+cURL https://studioapi.bluebeam.com/PublicApi/v1/notifications/subscriptions/6789 \
+-H "Authorization:Bearer {A Valid access_token}" \
+-X GET
+Example Response
+{  
+   "$id":"1",
+   "EndpointId":523,
+   "Resource":"/Primes/{Studio Prime ID}/Projects/{ProjectId}/",
+   "Source":"Studio",
+   "Status":"Active",
+   "SubscriptionId":6789,
+   "Uri":"{Your Callback URI}"
+}
+
+
+
+
+
+
+xchange action new --module-id notifications-1 --object-name Subscription --name SubscribeStudioProject
+
+
+Subscribe to a Studio Project
+Changes that will trigger notifications:
+Project is renamed
+Project is deleted
+Endpoint
+Make a POST request to the subscriptions endpoint.
+
+
+https://studioapi.bluebeam.com/PublicAPI/v1/notifications/subscriptions
+
+
+Request Parameters
+Name        Description
+ParentResourceType        Specify the parent object type for the subscription, in this case, use Projects.
+ProjectId        9-digit ID for the Studio Project. Find a Project’s ID by making a GET request to the Projects endpoint.
+Uri        Specify where you want your notifications to go; your URI for the callback.
+Example cURL Request
+curl https://studioapi.bluebeam.com/PublicAPI/v1/notifications/subscriptions \
+-H "Authorization:Bearer{A Valid access_token}" \
+-H "Content-Type:application/x-www-form-urlencoded" \
+-d 'ParentResourceType=Projects&ProjectId=123-456-789&Uri=http://YourCallbackURI.com' \
+-X POST
+Example Response
+{  
+   "$id":"1",
+   "EndpointId":521,
+   "Resource":"/Primes/{Studio Prime ID}/Projects/{ProjectId}/",
+   "Source":"Studio",
+   "Status":"Active",
+   "SubscriptionId":1234,
+   "Uri":"{Your Callback URI}",
+   "Key":"432C401BFDEB6B21A986C258F8380E3F1E93FFD3"
+}
+Example Notification Callback
+When the Studio Project Item is moved, renamed or deleted, you will get a callback. In this example, the Project File was renamed, so the EventType is “Update”. If the Project was deleted, the EventType would be “Delete”.
+
+
+{  
+   "Id":"{subscription GUID}",
+   "SubscriptionId":1234,
+   "Source":0,
+   "Resource":"/Primes/{Studio Prime ID}/Projects/{ProjectId}/",
+   "Timestamp":"2018-01-23T21:45:49.6785342+00:00",
+   "ExtraInformation":{  
+      "ResourceType":"Projects",
+      "User":"{studio user email address}",
+      "EventType":"Update",
+      "IdPath":null,
+      "Path":null,
+      "ItemType":null,
+      "Name":"{Studio Project Name}"
+   }
+}
+
+xchange action new --module-id notifications-1 --object-name Subscription --name SubscribeFileFolder
+
+Subscribe to a File or Folder Within a Studio Project
+Changes that will trigger notifications:
+Folder or File is moved
+Folder or File is renamed
+Folder or File is deleted
+Endpoint
+Make a POST request to the subscriptions endpoint.
+
+
+https://studioapi.bluebeam.com/PublicAPI/v1/notifications/subscriptions
+
+
+Request Parameters
+Name        Description
+ParentResourceType        Specify the parent object type for the subscription, in this case, use Projects.
+ProjectId        9-digit ID for the Studio Project. Find a Project’s ID by making a GET request to the Projects endpoint.
+ItemType        The type of Studio Project Item. Possible values: folder, file.
+ProjectItemId        The ID for the Studio Project Folder or File. Find a Project Folder’s ID by making a GET request to the Project Folder endpoint. Find a Project File’s ID by making a GET request to the Project Files endpoint.
+Uri        Specify where you want your notifications to go; your URI for the callback.
+Example cURL Request
+curl https://studioapi.bluebeam.com/PublicAPI/v1/notifications/subscriptions \
+-H "Authorization:Bearer{A Valid access_token}" \
+-H "Content-Type:application/x-www-form-urlencoded" \
+-d 'ParentResourceType=ProjectItems&ProjectId=123-456-789&ItemType=File&ProjectItemId=123456&Uri=http://YourCallbackURI.com' \
+-X POST
+Example Response
+{  
+   "$id":"1",
+   "EndpointId":521,
+   "Resource":"/Primes/{Prime ID}/Projects/{Project ID}/ProjectItems/{File ID}/",
+   "Source":"Studio",
+   "Status":"Active",
+   "SubscriptionId":2345,
+   "Uri":"{Your Callback URI}",
+   "Key":"A120F4FEDBE8E217C670DA08AC4F5113C4E46DDB"
+}
+Example Notification Callback
+{  
+   "Id":"f2149d02-8c28-4b99-98d4-16a368372ee4",
+   "SubscriptionId":2345,
+   "Source":0,
+   "Resource":"/Primes/{Studio Prime ID}/Projects/{ProjectId}/ProjectItems/{File ID}/",
+   "Timestamp":"2018-01-26T18:46:03.7836117+00:00",
+   "ExtraInformation":{  
+      "ResourceType":"ProjectItems",
+      "User":"{User Email Address}",
+      "EventType":"Update",
+      "IdPath":"/{Root Folder ID}/{Folder ID}/{File ID}",
+      "Path":"/{Folder Name}/{File Name}",
+      "ItemType":"File",
+      "Name":"{File Name}"
+   }
+}
+
+
+xchange action new --module-id notifications-1 --object-name Subscription --name SubscribeStudioSession
+
+
+Subscribe to a Studio Session
+Changes that will trigger notifications:
+Session is renamed
+Session expiration date is updated
+Session status changes to Finalizing
+Session is deleted
+Endpoint
+Make a POST request to the subscriptions endpoint.
+
+
+https://studioapi.bluebeam.com/PublicAPI/v1/notifications/subscriptions
+
+
+Request Parameters
+Name        Description
+ParentResourceType        Specify the parent object type for the subscription, in this case, use Sessions.
+SessionId        9-digit ID for the Studio Session. Find a Session’s ID by making a GET request to the Sessions endpoint.
+Uri        Specify where you want your notifications to go; your URI for the callback.
+Example cURL Request
+curl https://studioapi.bluebeam.com/PublicAPI/v1/notifications/subscriptions \
+-H "Authorization:Bearer{A Valid access_token}" \
+-H "Content-Type:application/x-www-form-urlencoded" \
+-d 'ParentResourceType=Sessions&SessionId=123-456-789&Uri=http://YourCallbackURI.com' \
+-X POST
+Example Response
+{  
+   "$id":"1",
+   "EndpointId":523,
+   "Resource":"/Primes/{Studio Prime ID}/Sessions/{SessionId}/",
+   "Source":"Studio",
+   "Status":"Active",
+   "SubscriptionId":3456,
+   "Uri":"{Your Callback URI}",
+   "Key":"51C5F4A0979BEEDD63AC8264314297739DB52209"
+}
+Example Notification Callback
+{  
+   "Id":"ea3823e2-5825-4d01-b34e-ed4724ab240c",
+   "SubscriptionId":3456,
+   "Source":0,
+   "Resource":"/Primes/{Studio Prime ID}/Sessions/{SessionId}/",
+   "Timestamp":"2018-01-29T20:51:35.9509673+00:00",
+   "ExtraInformation":{  
+      "ResourceType":"Sessions",
+      "User":"{User Email Address}",
+      "EventType":"Delete",
+      "IdPath":null,
+      "Path":null,
+      "ItemType":null,
+      "Name":"{Studio Session Name}"
+   }
+}
+
+
+
+
+
+
+xchange action new --module-id notifications-1 --object-name Subscription --name SubscribeDocument
+
+
+Subscribe to a Document Within a Studio Session
+This subscription will send a notification when the document is deleted.
+
+
+If you want to know when documents are added to a Session, create a comprehensive subscription to the Session.
+
+
+Endpoint
+Make a POST request to the subscriptions endpoint.
+
+
+https://studioapi.bluebeam.com/PublicAPI/v1/notifications/subscriptions
+
+
+Request Parameters
+Name        Description
+ParentResourceType        Specify the parent object type for the subscription, in this case, use Sessions.
+SessionId        9-digit ID for the Studio Session. Find a Session’s ID by making a GET request to the Sessions endpoint.
+SessionDocumentId        The ID for the Studio Session Document. Find a Session Document’s ID by looking at the Id of a file returned from a GET SessionFiles request.
+Uri        Specify where you want your notifications to go; your URI for the callback.
+Example cURL Request
+curl https://studioapi.bluebeam.com/PublicAPI/v1/notifications/subscriptions \
+-H "Authorization:Bearer{A Valid access_token}" \
+-H "Content-Type:application/x-www-form-urlencoded" \
+-d 'ParentResourceType=Sessions&SessionId=123-456-789&SessionDocumentId=1234567Uri=http://YourCallbackURI.com' \
+-X POST
+Example Response
+{  
+   "$id":"1",
+   "EndpointId":522,
+   "Resource":"/Primes/{Studio Prime ID}/Sessions/{SessionId}/SessionDocuments/{SessionDocumentId}/",
+   "Source":"Studio",
+   "Status":"Active",
+   "SubscriptionId":4567,
+   "Uri":"{Your Callback URI}",
+   "Key":"757F13CEFCA517BAF13E4FA9BA6A05FFD979B0B6"
+}
+Example Notification Callback
+{  
+   "Id":"cecfaf8e-7d0f-4fb1-8547-04c07de14406",
+   "SubscriptionId":4567,
+   "Source":0,
+   "Resource":"/Primes/{Studio Prime ID}/Sessions/{SessionId}/SessionDocuments/{SessionDocumentId}/",
+   "Timestamp":"2018-01-29T21:21:48.6498765+00:00",
+   "ExtraInformation":{  
+      "ResourceType":"SessionDocuments",
+      "User":"{User Email Address}",
+      "EventType":"Delete",
+      "IdPath":null,
+      "Path":null,
+      "ItemType":null,
+      "Name":"{Session Document Name}"
+   }
+}
+
+
+
+
+xchange data-object new --module-id notifications-1 --name ComprehensiveSubscription
+xchange action new --module-id notifications-1 --object-name ComprehensiveSubscription --name Create
+
+
+Creating a Comprehensive Subscription
+A comprehensive subscription will send notifications of change to both the Parent Resource and any items within it.
+
+
+For example:
+A comprehensive subscription to a Studio Project will send notifications about changes to the Project, and any Folders or Files within it.
+A comprehensive subscription to a Studio Session will send notifications of changes to the Studio Session and any Session Documents within it.
+See What Can Be Subscribed To? for a list of changes that will trigger a notification.
+
+
+To create a comprehensive subscription, make a POST request to the comprehensive subscription endpoint. In this example, we will create a comprehensive subscription to a Studio Project.
+
+
+Endpoint
+https://studioapi.bluebeam.com/PublicAPI/v1/notifications/subscriptions/comprehensive
+
+
+Request Parameters
+Name        Description
+ParentResourceType        Specify the parent object type for the subscription, in this case, use Projects.
+ProjectId        9-digit ID for the Studio Project. Find a Project’s ID by making a GET request to the Projects endpoint.
+Uri        Specify where you want your notifications to go; your URI for the callback.
+Example cURL Request
+curl https://studioapi.bluebeam.com/PublicAPI/v1/notifications/subscriptions/comprehensive \
+-H "Authorization:Bearer{A Valid access_token}" \
+-H "Content-Type:application/x-www-form-urlencoded" \
+-d 'ParentResourceType=Projects&ProjectId=123-456-789&Uri=http://YourCallbackURI.com' \
+-X POST
+Example Response
+{  
+   "$id":"1",
+   "EndpointId":522,
+   "Resource":"/Primes/{Studio Prime ID}/Projects/{ProjectId}/",
+   "Source":"Studio",
+   "Status":"Active",
+   "SubscriptionId":5678,
+   "Uri":"{Your Callback URL}",
+   "Key":"432C401BFDEB6B21A986C258F8380E3F1E93FFD3"
+}
+Example Notification Callbacks
+In the example below, the EventType is “Update” because the Studio Project was renamed.
+
+
+{  
+   "Id":"0531db33-9451-49fc-8436-25b9e62e844d",
+   "SubscriptionId":5678,
+   "Source":0,
+   "Resource":"/Primes/{Studio Prime ID}/Projects/{ProjectId}/",
+   "Timestamp":"2018-01-23T21:45:49.6785342+00:00",
+   "ExtraInformation":{  
+      "ResourceType":"Projects",
+      "User":"{User Email Address}",
+      "EventType":"Update",
+      "IdPath":null,
+      "Path":null,
+      "ItemType":null,
+      "Name":"{Studio Project Name}"
+   }
+}
+In the example below, the ItemType is “File” and the EventType is “Update”, which means that the Studio Project File was either moved or renamed.
+
+
+{  
+   "Id":"f2149d02-8c28-4b99-98d4-16a368372ee4",
+   "SubscriptionId":5678,
+   "Source":0,
+   "Resource":"/Primes/{Studio Prime ID}/Projects/{ProjectId}/ProjectItems/{File ID}/",
+   "Timestamp":"2018-01-26T18:46:03.7836117+00:00",
+   "ExtraInformation":{  
+      "ResourceType":"ProjectItems",
+      "User":"{User Email Address}",
+      "EventType":"Update",
+      "IdPath":"/{Root Folder ID}/{Folder ID}/{File ID}",
+      "Path":"/{Folder Name}/{File Name}",
+      "ItemType":"File",
+      "Name":"{File Name}"
+   }
+}
+
+
+xchange action new --module-id notifications-1 --object-name Subscription --name Delete
+
+
+
+
+Unsubscribing
+Delete a Subscription
+To unsubscribe, make a DELETE request to the subscription endpoint, specifying the subscription you want to remove. When successful, you’ll get a 204 Response.
+
+
+Endpoint
+https://studioapi.bluebeam.com/PublicAPI/v1/notifications/subscriptions/{subscription_id}
+
+
+Example cURL Request
+cURL https://studioapi.bluebeam.com/PublicApi/v1/notifications/subscriptions/6789 \
+-H "Authorization:Bearer {A Valid access_token}" \
+-X DELETE

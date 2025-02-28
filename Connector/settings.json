@@ -1,0 +1,24 @@
+{
+  "name": "Bluebeam",
+  "urlPart": "bluebeam",
+  "key": "bluebeam",
+  "description": "",
+  "modules": [
+    {
+      "id": "sessions-1",
+      "name": "Sessions",
+      "urlPart": "sessions",
+      "key": "sessions",
+      "description": "",
+      "version": 1
+    },
+    {
+      "id": "notifications-1",
+      "name": "Notifications",
+      "urlPart": "notifications",
+      "key": "notifications",
+      "description": "",
+      "version": 1
+    }
+  ]
+}
