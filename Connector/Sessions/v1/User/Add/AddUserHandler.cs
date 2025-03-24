@@ -11,15 +11,15 @@ using Xchange.Connector.SDK.Action;
 using Xchange.Connector.SDK.CacheWriter;
 using Xchange.Connector.SDK.Client.AppNetwork;
 
-namespace Connector.Sessions.v1.Finalizing.SetStatus;
+namespace Connector.Sessions.v1.User.Add;
 
-public class SetStatusFinalizingHandler : IActionHandler<SetStatusFinalizingAction>
+public class AddUserHandler : IActionHandler<AddUserAction>
 {
-    private readonly ILogger<SetStatusFinalizingHandler> _logger;
+    private readonly ILogger<AddUserHandler> _logger;
     private readonly ApiClient _apiClient;
 
-    public SetStatusFinalizingHandler(
-        ILogger<SetStatusFinalizingHandler> logger,
+    public AddUserHandler(
+        ILogger<AddUserHandler> logger,
         ApiClient apiClient)
     {
         _logger = logger;
@@ -28,7 +28,7 @@ public class SetStatusFinalizingHandler : IActionHandler<SetStatusFinalizingActi
     
     public async Task<ActionHandlerOutcome> HandleQueuedActionAsync(ActionInstance actionInstance, CancellationToken cancellationToken)
     {
-        var input = JsonSerializer.Deserialize<SetStatusFinalizingActionInput>(actionInstance.InputJson);
+        var input = JsonSerializer.Deserialize<AddUserActionInput>(actionInstance.InputJson);
         if (input == null)
         {
             return ActionHandlerOutcome.Failed(new StandardActionFailure
@@ -36,7 +36,7 @@ public class SetStatusFinalizingHandler : IActionHandler<SetStatusFinalizingActi
                 Code = "400",
                 Errors = new[] { new Xchange.Connector.SDK.Action.Error
                 {
-                    Source = new[] { "SetStatusFinalizingHandler" },
+                    Source = new[] { "AddUserHandler" },
                     Text = "Invalid input: Failed to deserialize action input"
                 }}
             });
@@ -44,7 +44,7 @@ public class SetStatusFinalizingHandler : IActionHandler<SetStatusFinalizingActi
 
         try
         {
-            var response = await _apiClient.SetStatusFinalizing(input.SessionId, cancellationToken);
+            var response = await _apiClient.AddUser(input, cancellationToken);
 
             if (!response.IsSuccessful)
             {
@@ -55,36 +55,38 @@ public class SetStatusFinalizingHandler : IActionHandler<SetStatusFinalizingActi
                     {
                         new Xchange.Connector.SDK.Action.Error
                         {
-                            Source = new[] { "SetStatusFinalizingHandler" },
-                            Text = "Failed to set session status to Finalizing"
+                            Source = new[] { "AddUserHandler" },
+                            Text = "Failed to add user to session"
                         }
                     }
                 });
             }
 
-            var output = new SetStatusFinalizingActionOutput();
-            var finalizingData = new FinalizingDataObject
+            var output = new AddUserActionOutput();
+            var userData = new UserDataObject
             {
+                Email = input.Email,
                 SessionId = input.SessionId,
-                Status = "Finalizing",
-                FinalizingTime = System.DateTime.UtcNow
+                Message = input.Message,
+                InvitationStatus = "Added",
+                InvitationTime = System.DateTime.UtcNow
             };
 
             var operations = new List<SyncOperation>();
             var keyResolver = new DefaultDataObjectKey();
-            var key = keyResolver.BuildKeyResolver()(finalizingData);
-            operations.Add(SyncOperation.CreateSyncOperation(UpdateOperation.Upsert.ToString(), key.UrlPart, key.PropertyNames, finalizingData));
+            var key = keyResolver.BuildKeyResolver()(userData);
+            operations.Add(SyncOperation.CreateSyncOperation(UpdateOperation.Upsert.ToString(), key.UrlPart, key.PropertyNames, userData));
 
             var resultList = new List<CacheSyncCollection>
             {
-                new() { DataObjectType = typeof(FinalizingDataObject), CacheChanges = operations.ToArray() }
+                new() { DataObjectType = typeof(UserDataObject), CacheChanges = operations.ToArray() }
             };
 
             return ActionHandlerOutcome.Successful(output, resultList);
         }
         catch (HttpRequestException exception)
         {
-            _logger.LogError(exception, "Failed to set session status to Finalizing");
+            _logger.LogError(exception, "Failed to add user to session");
             
             return ActionHandlerOutcome.Failed(new StandardActionFailure
             {
@@ -93,7 +95,7 @@ public class SetStatusFinalizingHandler : IActionHandler<SetStatusFinalizingActi
                 {
                     new Xchange.Connector.SDK.Action.Error
                     {
-                        Source = new[] { "SetStatusFinalizingHandler" },
+                        Source = new[] { "AddUserHandler" },
                         Text = exception.Message
                     }
                 }

@@ -12,13 +12,36 @@ using Xchange.Connector.SDK.CacheWriter;
 /// are properly formed. The schema also helps provide integrators more information for what the values 
 /// are intended to be.
 /// </summary>
-[PrimaryKey("id", nameof(Id))]
-//[AlternateKey("alt-key-id", nameof(CompanyId), nameof(EquipmentNumber))]
-[Description("Example description of the object.")]
+[PrimaryKey("subscriptionId", nameof(SubscriptionId))]
+[Description("Represents a Bluebeam Studio subscription")]
 public class SubscriptionDataObject
 {
     [JsonPropertyName("id")]
-    [Description("Example primary key of the object")]
+    [Description("The unique identifier for the subscription item")]
+    public required string Id { get; init; }
+
+    [JsonPropertyName("endpointId")]
+    [Description("The endpoint identifier")]
+    public int EndpointId { get; init; }
+
+    [JsonPropertyName("resource")]
+    [Description("The resource path")]
+    public string Resource { get; init; } = string.Empty;
+
+    [JsonPropertyName("source")]
+    [Description("The source of the subscription")]
+    public string Source { get; init; } = string.Empty;
+
+    [JsonPropertyName("status")]
+    [Description("The status of the subscription")]
+    public string Status { get; init; } = string.Empty;
+
+    [JsonPropertyName("subscriptionId")]
+    [Description("The subscription identifier")]
     [Required]
-    public required Guid Id { get; init; }
+    public int SubscriptionId { get; init; }
+
+    [JsonPropertyName("uri")]
+    [Description("The callback URI")]
+    public string Uri { get; init; } = string.Empty;
 }

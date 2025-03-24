@@ -16,70 +16,78 @@ namespace Connector.Sessions.v1.Session.Delete;
 public class DeleteSessionHandler : IActionHandler<DeleteSessionAction>
 {
     private readonly ILogger<DeleteSessionHandler> _logger;
+    private readonly ApiClient _apiClient;
 
     public DeleteSessionHandler(
-        ILogger<DeleteSessionHandler> logger)
+        ILogger<DeleteSessionHandler> logger,
+        ApiClient apiClient)
     {
         _logger = logger;
+        _apiClient = apiClient;
     }
     
     public async Task<ActionHandlerOutcome> HandleQueuedActionAsync(ActionInstance actionInstance, CancellationToken cancellationToken)
     {
         var input = JsonSerializer.Deserialize<DeleteSessionActionInput>(actionInstance.InputJson);
+        if (input == null)
+        {
+            return ActionHandlerOutcome.Failed(new StandardActionFailure
+            {
+                Code = "400",
+                Errors = new[] { new Xchange.Connector.SDK.Action.Error
+                {
+                    Source = new[] { "DeleteSessionHandler" },
+                    Text = "Invalid input: Failed to deserialize action input"
+                }}
+            });
+        }
+
         try
         {
-            // Given the input for the action, make a call to your API/system
-            var response = new ApiResponse<DeleteSessionActionOutput>();
-            // response = await _apiClient.PostSessionDataObject(input, cancellationToken)
-            // .ConfigureAwait(false);
+            var response = await _apiClient.DeleteSession(input.SessionId, cancellationToken);
 
-            // The full record is needed for SyncOperations. If the endpoint used for the action returns a partial record (such as only returning the ID) then you can either:
-            // - Make a GET call using the ID that was returned
-            // - Add the ID property to your action input (Assuming this results in the proper data object shape)
+            if (!response.IsSuccessful)
+            {
+                return ActionHandlerOutcome.Failed(new StandardActionFailure
+                {
+                    Code = response.StatusCode.ToString(),
+                    Errors = new[] { new Xchange.Connector.SDK.Action.Error
+                    {
+                        Source = new[] { "DeleteSessionHandler" },
+                        Text = "Failed to delete session"
+                    }}
+                });
+            }
 
-            // var resource = await _apiClient.GetSessionDataObject(response.Data.id, cancellationToken);
+            var output = new DeleteSessionActionOutput
+            {
+                Success = true
+            };
 
-            // var resource = new DeleteSessionActionOutput
-            // {
-            //      TODO : map
-            // };
-
-            // If the response is already the output object for the action, you can use the response directly
-
-            // Build sync operations to update the local cache as well as the Xchange cache system (if the data type is cached)
-            // For more information on SyncOperations and the KeyResolver, check: https://trimble-xchange.github.io/connector-docs/guides/creating-actions/#keyresolver-and-the-sync-cache-operations
             var operations = new List<SyncOperation>();
             var keyResolver = new DefaultDataObjectKey();
-            var key = keyResolver.BuildKeyResolver()(response.Data);
-            operations.Add(SyncOperation.CreateSyncOperation(UpdateOperation.Upsert.ToString(), key.UrlPart, key.PropertyNames, response.Data));
+            var key = keyResolver.BuildKeyResolver()(new SessionDataObject { Id = input.SessionId, Name = string.Empty });
+            operations.Add(SyncOperation.CreateSyncOperation(UpdateOperation.Delete.ToString(), key.UrlPart, key.PropertyNames, null));
 
             var resultList = new List<CacheSyncCollection>
             {
-                new CacheSyncCollection() { DataObjectType = typeof(SessionDataObject), CacheChanges = operations.ToArray() }
+                new() { DataObjectType = typeof(SessionDataObject), CacheChanges = operations.ToArray() }
             };
 
-            return ActionHandlerOutcome.Successful(response.Data, resultList);
+            return ActionHandlerOutcome.Successful(output, resultList);
         }
         catch (HttpRequestException exception)
         {
-            // If an error occurs, we want to create a failure result for the action that matches
-            // the failure type for the action. 
-            // Common to create extension methods to map to Standard Action Failure
-
-            var errorSource = new List<string> { "DeleteSessionHandler" };
-            if (string.IsNullOrEmpty(exception.Source)) errorSource.Add(exception.Source!);
+            _logger.LogError(exception, "Failed to delete session");
             
             return ActionHandlerOutcome.Failed(new StandardActionFailure
             {
                 Code = exception.StatusCode?.ToString() ?? "500",
-                Errors = new []
+                Errors = new[] { new Xchange.Connector.SDK.Action.Error
                 {
-                    new Xchange.Connector.SDK.Action.Error
-                    {
-                        Source = errorSource.ToArray(),
-                        Text = exception.Message
-                    }
-                }
+                    Source = new[] { "DeleteSessionHandler" },
+                    Text = exception.Message
+                }}
             });
         }
     }

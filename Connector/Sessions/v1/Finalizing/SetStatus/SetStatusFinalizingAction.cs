@@ -1,7 +1,6 @@
 namespace Connector.Sessions.v1.Finalizing.SetStatus;
 
 using Json.Schema.Generation;
-using System;
 using System.Text.Json.Serialization;
 using Xchange.Connector.SDK.Action;
 
@@ -14,10 +13,10 @@ using Xchange.Connector.SDK.Action;
 /// are properly formed. The schema also helps provide integrators more information for what the values 
 /// are intended to be.
 /// </summary>
-[Description("SetStatusFinalizingAction Action description goes here")]
+[Description("Sets a Bluebeam Studio Session's status to Finalizing")]
 public class SetStatusFinalizingAction : IStandardAction<SetStatusFinalizingActionInput, SetStatusFinalizingActionOutput>
 {
-    public SetStatusFinalizingActionInput ActionInput { get; set; } = new();
+    public SetStatusFinalizingActionInput ActionInput { get; set; } = new() { SessionId = string.Empty };
     public SetStatusFinalizingActionOutput ActionOutput { get; set; } = new();
     public StandardActionFailure ActionFailure { get; set; } = new();
 
@@ -26,11 +25,15 @@ public class SetStatusFinalizingAction : IStandardAction<SetStatusFinalizingActi
 
 public class SetStatusFinalizingActionInput
 {
-
+    [JsonPropertyName("sessionId")]
+    [Description("The ID of the session to set to Finalizing status")]
+    [Required]
+    public required string SessionId { get; init; }
 }
 
 public class SetStatusFinalizingActionOutput
 {
-    [JsonPropertyName("id")]
-    public Guid Id { get; set; }
+    [JsonPropertyName("status")]
+    [Description("The new status of the session")]
+    public string Status { get; init; } = "Finalizing";
 }

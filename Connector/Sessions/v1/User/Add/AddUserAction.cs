@@ -1,4 +1,4 @@
-namespace Connector.Sessions.v1.Snapshop.Create;
+namespace Connector.Sessions.v1.User.Add;
 
 using Json.Schema.Generation;
 using System;
@@ -14,36 +14,40 @@ using Xchange.Connector.SDK.Action;
 /// are properly formed. The schema also helps provide integrators more information for what the values 
 /// are intended to be.
 /// </summary>
-[Description("Creates a snapshot of a file in a Bluebeam Studio Session, combining PDF content with markup layer")]
-public class CreateSnapshopAction : IStandardAction<CreateSnapshopActionInput, CreateSnapshopActionOutput>
+[Description("Adds a user to a Bluebeam Studio Session")]
+public class AddUserAction : IStandardAction<AddUserActionInput, AddUserActionOutput>
 {
-    public CreateSnapshopActionInput ActionInput { get; set; } = new() { SessionId = string.Empty, FileId = 0 };
-    public CreateSnapshopActionOutput ActionOutput { get; set; } = new();
+    public AddUserActionInput ActionInput { get; set; } = new() { Email = string.Empty, SessionId = string.Empty };
+    public AddUserActionOutput ActionOutput { get; set; } = new();
     public StandardActionFailure ActionFailure { get; set; } = new();
 
     public bool CreateRtap => true;
 }
 
-public class CreateSnapshopActionInput
+public class AddUserActionInput
 {
     [JsonPropertyName("sessionId")]
-    [Description("The ID of the session containing the file")]
+    [Description("The ID of the session to add the user to")]
     [Required]
     public required string SessionId { get; init; }
 
-    [JsonPropertyName("fileId")]
-    [Description("The ID of the file to create a snapshot for")]
+    [JsonPropertyName("email")]
+    [Description("Email address of known Studio account")]
     [Required]
-    public required int FileId { get; init; }
+    public required string Email { get; init; }
+
+    [JsonPropertyName("sendEmail")]
+    [Description("Whether to send an email notification to the user")]
+    public bool SendEmail { get; init; }
+
+    [JsonPropertyName("message")]
+    [Description("Custom message that will display in the email, if the email is sent")]
+    public string? Message { get; init; }
 }
 
-public class CreateSnapshopActionOutput
+public class AddUserActionOutput
 {
     [JsonPropertyName("status")]
-    [Description("The status of the snapshot creation")]
-    public string Status { get; init; } = "Requested";
-
-    [JsonPropertyName("statusTime")]
-    [Description("The timestamp when the status was last updated")]
-    public string StatusTime { get; init; } = string.Empty;
+    [Description("The status of adding the user")]
+    public string Status { get; init; } = "Added";
 }

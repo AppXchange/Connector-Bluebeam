@@ -14,10 +14,10 @@ using Xchange.Connector.SDK.Action;
 /// are properly formed. The schema also helps provide integrators more information for what the values 
 /// are intended to be.
 /// </summary>
-[Description("DeleteSessionAction Action description goes here")]
+[Description("Deletes a Bluebeam Studio Session")]
 public class DeleteSessionAction : IStandardAction<DeleteSessionActionInput, DeleteSessionActionOutput>
 {
-    public DeleteSessionActionInput ActionInput { get; set; } = new();
+    public DeleteSessionActionInput ActionInput { get; set; } = new() { SessionId = string.Empty };
     public DeleteSessionActionOutput ActionOutput { get; set; } = new();
     public StandardActionFailure ActionFailure { get; set; } = new();
 
@@ -26,11 +26,15 @@ public class DeleteSessionAction : IStandardAction<DeleteSessionActionInput, Del
 
 public class DeleteSessionActionInput
 {
-
+    [JsonPropertyName("sessionId")]
+    [Description("The ID of the session to delete")]
+    [Required]
+    public required string SessionId { get; init; }
 }
 
 public class DeleteSessionActionOutput
 {
-    [JsonPropertyName("id")]
-    public Guid Id { get; set; }
+    [JsonPropertyName("success")]
+    [Description("Whether the session was successfully deleted")]
+    public bool Success { get; init; }
 }

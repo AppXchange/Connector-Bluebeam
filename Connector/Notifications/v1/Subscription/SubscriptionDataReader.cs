@@ -1,78 +1,64 @@
-using Connector.Client;
 using System;
-using ESR.Hosting.CacheWriter;
-using Microsoft.Extensions.Logging;
 using System.Collections.Generic;
-using System.Linq;
+using System.Net.Http;
 using System.Runtime.CompilerServices;
 using System.Threading;
+using Microsoft.Extensions.Logging;
 using Xchange.Connector.SDK.CacheWriter;
-using System.Net.Http;
+using Connector.Client;
+using ESR.Hosting.CacheWriter;
 
 namespace Connector.Notifications.v1.Subscription;
 
 public class SubscriptionDataReader : TypedAsyncDataReaderBase<SubscriptionDataObject>
 {
     private readonly ILogger<SubscriptionDataReader> _logger;
-    private int _currentPage = 0;
+    private readonly ApiClient _apiClient;
 
-    public SubscriptionDataReader(
-        ILogger<SubscriptionDataReader> logger)
+    public SubscriptionDataReader(ILogger<SubscriptionDataReader> logger, ApiClient apiClient)
     {
         _logger = logger;
+        _apiClient = apiClient;
     }
 
-    public override async IAsyncEnumerable<SubscriptionDataObject> GetTypedDataAsync(DataObjectCacheWriteArguments ? dataObjectRunArguments, [EnumeratorCancellation] CancellationToken cancellationToken)
+    public override async IAsyncEnumerable<SubscriptionDataObject> GetTypedDataAsync(
+        DataObjectCacheWriteArguments? dataObjectRunArguments,
+        [EnumeratorCancellation] CancellationToken cancellationToken)
     {
-        while (true)
+        SubscriptionDataObject? data = null;
+        try
         {
-            var response = new ApiResponse<PaginatedResponse<SubscriptionDataObject>>();
-            // If the SubscriptionDataObject does not have the same structure as the Subscription response from the API, create a new class for it and replace SubscriptionDataObject with it.
-            // Example:
-            // var response = new ApiResponse<IEnumerable<SubscriptionResponse>>();
-
-            // Make a call to your API/system to retrieve the objects/type for the connector's configuration.
-            try
+            // Get the subscription ID from the URL parameters
+            if (dataObjectRunArguments == null || !int.TryParse(dataObjectRunArguments.ToString(), out var subscriptionId))
             {
-                //response = await _apiClient.GetRecords<SubscriptionDataObject>(
-                //    relativeUrl: "subscriptions",
-                //    page: _currentPage,
-                //    cancellationToken: cancellationToken)
-                //    .ConfigureAwait(false);
-            }
-            catch (HttpRequestException exception)
-            {
-                _logger.LogError(exception, "Exception while making a read request to data object 'SubscriptionDataObject'");
-                throw;
+                _logger.LogError("Invalid or missing subscription ID in URL parameters");
+                yield break;
             }
 
+            var response = await _apiClient.GetSubscription(subscriptionId, cancellationToken);
             if (!response.IsSuccessful)
             {
-                throw new Exception($"Failed to retrieve records for 'SubscriptionDataObject'. API StatusCode: {response.StatusCode}");
+                _logger.LogError("Failed to get subscription data. Status code: {StatusCode}", response.StatusCode);
+                yield break;
             }
 
-            if (response.Data == null || !response.Data.Items.Any()) break;
-
-            // Return the data objects to Cache.
-            foreach (var item in response.Data.Items)
+            if (response.Data == null)
             {
-                // If new class was created to match the API response, create a new SubscriptionDataObject object, map the properties and return a SubscriptionDataObject.
-
-                // Example:
-                //var resource = new SubscriptionDataObject
-                //{
-                //// TODO: Map properties.      
-                //};
-                //yield return resource;
-                yield return item;
+                _logger.LogWarning("No subscription data returned from API");
+                yield break;
             }
 
-            // Handle pagination per API client design
-            _currentPage++;
-            if (_currentPage >= response.Data.TotalPages)
-            {
-                break;
-            }
+            data = response.Data;
+        }
+        catch (HttpRequestException exception)
+        {
+            _logger.LogError(exception, "Exception while retrieving subscription data");
+            throw;
+        }
+
+        if (data != null)
+        {
+            yield return data;
         }
     }
 }

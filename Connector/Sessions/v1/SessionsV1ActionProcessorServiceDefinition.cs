@@ -11,6 +11,7 @@ using Connector.Sessions.v1.Session.Initialize;
 using Connector.Sessions.v1.Snapshop;
 using Connector.Sessions.v1.Snapshop.Create;
 using Connector.Sessions.v1.User;
+using Connector.Sessions.v1.User.Add;
 using Connector.Sessions.v1.User.Invite;
 using Microsoft.Extensions.DependencyInjection;
 using System;
@@ -45,6 +46,7 @@ public class SessionsV1ActionProcessorServiceDefinition : BaseActionHandlerServi
         serviceCollection.AddScoped<SetStatusFinalizingHandler>();
         serviceCollection.AddScoped<CreateSnapshopHandler>();
         serviceCollection.AddScoped<DeleteSessionHandler>();
+        serviceCollection.AddScoped<AddUserHandler>();
     }
 
     public override void ConfigureService(IActionHandlerService service, SessionsV1ActionProcessorConfig config)
@@ -57,5 +59,6 @@ public class SessionsV1ActionProcessorServiceDefinition : BaseActionHandlerServi
         service.RegisterHandlerForDataObjectAction<SetStatusFinalizingHandler, FinalizingDataObject>(ModuleId, "finalizing", "set-status", config.SetStatusFinalizingConfig);
         service.RegisterHandlerForDataObjectAction<CreateSnapshopHandler, SnapshopDataObject>(ModuleId, "snapshop", "create", config.CreateSnapshopConfig);
         service.RegisterHandlerForDataObjectAction<DeleteSessionHandler, SessionDataObject>(ModuleId, "session", "delete", config.DeleteSessionConfig);
+        service.RegisterHandlerForDataObjectAction<AddUserHandler, UserDataObject>(ModuleId, "user", "add", config.AddUserConfig);
     }
 }

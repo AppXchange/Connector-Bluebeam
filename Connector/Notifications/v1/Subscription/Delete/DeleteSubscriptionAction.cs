@@ -1,7 +1,6 @@
 namespace Connector.Notifications.v1.Subscription.Delete;
 
 using Json.Schema.Generation;
-using System;
 using System.Text.Json.Serialization;
 using Xchange.Connector.SDK.Action;
 
@@ -14,10 +13,10 @@ using Xchange.Connector.SDK.Action;
 /// are properly formed. The schema also helps provide integrators more information for what the values 
 /// are intended to be.
 /// </summary>
-[Description("DeleteSubscriptionAction Action description goes here")]
+[Description("Delete a subscription from Bluebeam Studio")]
 public class DeleteSubscriptionAction : IStandardAction<DeleteSubscriptionActionInput, DeleteSubscriptionActionOutput>
 {
-    public DeleteSubscriptionActionInput ActionInput { get; set; } = new();
+    public DeleteSubscriptionActionInput ActionInput { get; set; } = new() { SubscriptionId = 0 };
     public DeleteSubscriptionActionOutput ActionOutput { get; set; } = new();
     public StandardActionFailure ActionFailure { get; set; } = new();
 
@@ -26,11 +25,15 @@ public class DeleteSubscriptionAction : IStandardAction<DeleteSubscriptionAction
 
 public class DeleteSubscriptionActionInput
 {
-
+    [JsonPropertyName("subscriptionId")]
+    [Description("The ID of the subscription to delete")]
+    [Required]
+    public int SubscriptionId { get; init; }
 }
 
 public class DeleteSubscriptionActionOutput
 {
-    [JsonPropertyName("id")]
-    public Guid Id { get; set; }
+    [JsonPropertyName("success")]
+    [Description("Whether the subscription was successfully deleted")]
+    public bool Success { get; init; }
 }

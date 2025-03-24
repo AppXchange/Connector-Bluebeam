@@ -228,6 +228,7 @@ OR
 Method B. Add User
 Add user is best to use if you know that the email address is already associated with a Studio account and you want them to be added to a Studio Session without opting in. If the user does not have an account, or if you are unsure if they do, choose the invite user method above. Using the Add User method, the user will be added to the Studio Session’s attendees, and the Studio Session will appear under their Attended Sessions within the Studio Tab of the Revu interface.
 
+xchange action new --module-id sessions-1 --object-name User --name Add
 
 Endpoint
 https://studioapi.bluebeam.com/publicapi/v1/sessions/{sessionId}/users

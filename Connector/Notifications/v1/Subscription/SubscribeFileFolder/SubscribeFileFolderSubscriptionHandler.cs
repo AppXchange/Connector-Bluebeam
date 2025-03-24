@@ -16,70 +16,98 @@ namespace Connector.Notifications.v1.Subscription.SubscribeFileFolder;
 public class SubscribeFileFolderSubscriptionHandler : IActionHandler<SubscribeFileFolderSubscriptionAction>
 {
     private readonly ILogger<SubscribeFileFolderSubscriptionHandler> _logger;
+    private readonly ApiClient _apiClient;
 
     public SubscribeFileFolderSubscriptionHandler(
-        ILogger<SubscribeFileFolderSubscriptionHandler> logger)
+        ILogger<SubscribeFileFolderSubscriptionHandler> logger,
+        ApiClient apiClient)
     {
         _logger = logger;
+        _apiClient = apiClient;
     }
     
     public async Task<ActionHandlerOutcome> HandleQueuedActionAsync(ActionInstance actionInstance, CancellationToken cancellationToken)
     {
         var input = JsonSerializer.Deserialize<SubscribeFileFolderSubscriptionActionInput>(actionInstance.InputJson);
+        if (input == null)
+        {
+            return ActionHandlerOutcome.Failed(new StandardActionFailure
+            {
+                Code = "400",
+                Errors = new[] { new Xchange.Connector.SDK.Action.Error
+                {
+                    Source = new[] { "SubscribeFileFolderSubscriptionHandler" },
+                    Text = "Invalid input: Failed to deserialize action input"
+                }}
+            });
+        }
+
         try
         {
-            // Given the input for the action, make a call to your API/system
-            var response = new ApiResponse<SubscribeFileFolderSubscriptionActionOutput>();
-            // response = await _apiClient.PostSubscriptionDataObject(input, cancellationToken)
-            // .ConfigureAwait(false);
+            var response = await _apiClient.SubscribeToFileFolder(input, cancellationToken);
+            if (!response.IsSuccessful)
+            {
+                return ActionHandlerOutcome.Failed(new StandardActionFailure
+                {
+                    Code = response.StatusCode.ToString(),
+                    Errors = new[] { new Xchange.Connector.SDK.Action.Error
+                    {
+                        Source = new[] { "SubscribeFileFolderSubscriptionHandler" },
+                        Text = "Failed to subscribe to file/folder"
+                    }}
+                });
+            }
 
-            // The full record is needed for SyncOperations. If the endpoint used for the action returns a partial record (such as only returning the ID) then you can either:
-            // - Make a GET call using the ID that was returned
-            // - Add the ID property to your action input (Assuming this results in the proper data object shape)
+            if (response.Data == null)
+            {
+                return ActionHandlerOutcome.Failed(new StandardActionFailure
+                {
+                    Code = "500",
+                    Errors = new[] { new Xchange.Connector.SDK.Action.Error
+                    {
+                        Source = new[] { "SubscribeFileFolderSubscriptionHandler" },
+                        Text = "No subscription data returned from API"
+                    }}
+                });
+            }
 
-            // var resource = await _apiClient.GetSubscriptionDataObject(response.Data.id, cancellationToken);
+            // Convert the action output to a data object for caching
+            var subscriptionDataObject = new SubscriptionDataObject
+            {
+                Id = response.Data.Id,
+                EndpointId = response.Data.EndpointId,
+                Resource = response.Data.Resource,
+                Source = response.Data.Source,
+                Status = response.Data.Status,
+                SubscriptionId = response.Data.SubscriptionId,
+                Uri = response.Data.Uri
+            };
 
-            // var resource = new SubscribeFileFolderSubscriptionActionOutput
-            // {
-            //      TODO : map
-            // };
-
-            // If the response is already the output object for the action, you can use the response directly
-
-            // Build sync operations to update the local cache as well as the Xchange cache system (if the data type is cached)
-            // For more information on SyncOperations and the KeyResolver, check: https://trimble-xchange.github.io/connector-docs/guides/creating-actions/#keyresolver-and-the-sync-cache-operations
+            // Build sync operations to update the cache
             var operations = new List<SyncOperation>();
             var keyResolver = new DefaultDataObjectKey();
-            var key = keyResolver.BuildKeyResolver()(response.Data);
-            operations.Add(SyncOperation.CreateSyncOperation(UpdateOperation.Upsert.ToString(), key.UrlPart, key.PropertyNames, response.Data));
+            var key = keyResolver.BuildKeyResolver()(subscriptionDataObject);
+            operations.Add(SyncOperation.CreateSyncOperation(UpdateOperation.Upsert.ToString(), key.UrlPart, key.PropertyNames, subscriptionDataObject));
 
             var resultList = new List<CacheSyncCollection>
             {
-                new CacheSyncCollection() { DataObjectType = typeof(SubscriptionDataObject), CacheChanges = operations.ToArray() }
+                new() { DataObjectType = typeof(SubscriptionDataObject), CacheChanges = operations.ToArray() }
             };
 
             return ActionHandlerOutcome.Successful(response.Data, resultList);
         }
         catch (HttpRequestException exception)
         {
-            // If an error occurs, we want to create a failure result for the action that matches
-            // the failure type for the action. 
-            // Common to create extension methods to map to Standard Action Failure
-
-            var errorSource = new List<string> { "SubscribeFileFolderSubscriptionHandler" };
-            if (string.IsNullOrEmpty(exception.Source)) errorSource.Add(exception.Source!);
+            _logger.LogError(exception, "Failed to subscribe to file/folder");
             
             return ActionHandlerOutcome.Failed(new StandardActionFailure
             {
                 Code = exception.StatusCode?.ToString() ?? "500",
-                Errors = new []
+                Errors = new[] { new Xchange.Connector.SDK.Action.Error
                 {
-                    new Xchange.Connector.SDK.Action.Error
-                    {
-                        Source = errorSource.ToArray(),
-                        Text = exception.Message
-                    }
-                }
+                    Source = new[] { "SubscribeFileFolderSubscriptionHandler" },
+                    Text = exception.Message
+                }}
             });
         }
     }

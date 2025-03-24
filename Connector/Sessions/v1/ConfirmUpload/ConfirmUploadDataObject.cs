@@ -14,11 +14,24 @@ using Xchange.Connector.SDK.CacheWriter;
 /// </summary>
 [PrimaryKey("id", nameof(Id))]
 //[AlternateKey("alt-key-id", nameof(CompanyId), nameof(EquipmentNumber))]
-[Description("Example description of the object.")]
+[Description("Represents a confirmed file upload in a Bluebeam Studio Session")]
 public class ConfirmUploadDataObject
 {
     [JsonPropertyName("id")]
-    [Description("Example primary key of the object")]
+    [Description("The unique identifier of the file")]
     [Required]
-    public required Guid Id { get; init; }
+    public required int Id { get; init; }
+
+    [JsonPropertyName("sessionId")]
+    [Description("The ID of the session containing the file")]
+    [Required]
+    public required string SessionId { get; init; }
+
+    [JsonPropertyName("status")]
+    [Description("The status of the file upload confirmation")]
+    public string? Status { get; init; }
+
+    [JsonPropertyName("confirmationTime")]
+    [Description("The timestamp when the upload was confirmed")]
+    public DateTime? ConfirmationTime { get; init; }
 }

@@ -1,0 +1,70 @@
+{
+  "profiles": {
+    "Connector": {
+      "commandName": "Project",
+      "environmentVariables": {
+        "DOTNET_ENVIRONMENT": "Development"
+      }
+    },
+    "Action Processor Local Development": {
+      "commandName": "Project",
+      "commandLineArgs": "--isLocal true --moduleId app-1 --serviceType ActionProcessor --dataObjectUrl health-check --actionUrl add",
+      "environmentVariables": {
+        "DIFFYCACHE_DBLOCATION": "./databases",
+        "ESR__QueueName": "localrun"
+      }
+    },
+    "Cache Writer Local Development": {
+      "commandName": "Project",
+      "commandLineArgs": "--isLocal true --moduleId app-1 --serviceType CacheWriter",
+      "environmentVariables": {
+        "DIFFYCACHE_DBLOCATION": "./databases",
+        "ESR__QueueName": "localrun"
+      }
+    },
+    "Test Connection Local Development": {
+      "commandName": "Project",
+      "commandLineArgs": "--isLocal true --testingConnection true",
+      "environmentVariables": {
+        "DIFFYCACHE_DBLOCATION": "./databases",
+        "ESR__QueueName": "localrun"
+      }
+    },
+    "InitializeSession": {
+      "commandName": "Project",
+      "environmentVariables": {
+        "DOTNET_ENVIRONMENT": "Development"
+      },
+      "commandLineArgs": "--isLocal true --moduleId sessions-1 --serviceType ActionProcessor --actionUrl initialize --dataObjectUrl session"
+    },
+    "CreateMetadataBlock": {
+      "commandName": "Project",
+      "environmentVariables": {
+        "DOTNET_ENVIRONMENT": "Development"
+      },
+      "commandLineArgs": "--isLocal true --moduleId sessions-1 --serviceType ActionProcessor --actionUrl create --dataObjectUrl metadata-block"
+    },
+    "ConfirmUpload": {
+      "commandName": "Project",
+      "environmentVariables": {
+        "DOTNET_ENVIRONMENT": "Development"
+      },
+      "commandLineArgs": "--isLocal true --moduleId sessions-1 --serviceType ActionProcessor --actionUrl confirm-upload --dataObjectUrl confirm-upload"
+    },
+    "GetSubscriptions": {
+      "commandName": "Project",
+      "environmentVariables": {
+        "DOTNET_ENVIRONMENT": "Development"
+      },
+      "commandLineArgs": "--isLocal true --moduleId notifications-1 --serviceType ActionProcessor --actionUrl get --dataObjectUrl subscriptions"
+    },
+    "GetSubscription": {
+      "commandName": "Project",
+      "environmentVariables": {
+        "DOTNET_ENVIRONMENT": "Development"
+      },
+      "commandLineArgs": "--isLocal true --moduleId notifications-1 --serviceType ActionProcessor --actionUrl get --dataObjectUrl subscription/{subscriptionId}"
+    }
+  }
+}
+ 

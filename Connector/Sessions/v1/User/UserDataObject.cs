@@ -12,13 +12,30 @@ using Xchange.Connector.SDK.CacheWriter;
 /// are properly formed. The schema also helps provide integrators more information for what the values 
 /// are intended to be.
 /// </summary>
-[PrimaryKey("id", nameof(Id))]
+[PrimaryKey("email", nameof(Email))]
 //[AlternateKey("alt-key-id", nameof(CompanyId), nameof(EquipmentNumber))]
-[Description("Example description of the object.")]
+[Description("Represents a user in a Bluebeam Studio Session")]
 public class UserDataObject
 {
-    [JsonPropertyName("id")]
-    [Description("Example primary key of the object")]
+    [JsonPropertyName("email")]
+    [Description("The email address of the user")]
     [Required]
-    public required Guid Id { get; init; }
+    public required string Email { get; init; }
+
+    [JsonPropertyName("sessionId")]
+    [Description("The ID of the session the user is invited to")]
+    [Required]
+    public required string SessionId { get; init; }
+
+    [JsonPropertyName("invitationStatus")]
+    [Description("The status of the user's invitation")]
+    public string? InvitationStatus { get; init; }
+
+    [JsonPropertyName("invitationTime")]
+    [Description("The timestamp when the user was invited")]
+    public DateTime? InvitationTime { get; init; }
+
+    [JsonPropertyName("message")]
+    [Description("The invitation message sent to the user")]
+    public string? Message { get; init; }
 }

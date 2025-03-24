@@ -14,60 +14,54 @@ namespace Connector.Sessions.v1.Finalizing;
 public class FinalizingDataReader : TypedAsyncDataReaderBase<FinalizingDataObject>
 {
     private readonly ILogger<FinalizingDataReader> _logger;
+    private readonly ApiClient _apiClient;
     private int _currentPage = 0;
 
     public FinalizingDataReader(
-        ILogger<FinalizingDataReader> logger)
+        ILogger<FinalizingDataReader> logger,
+        ApiClient apiClient)
     {
         _logger = logger;
+        _apiClient = apiClient;
     }
 
-    public override async IAsyncEnumerable<FinalizingDataObject> GetTypedDataAsync(DataObjectCacheWriteArguments ? dataObjectRunArguments, [EnumeratorCancellation] CancellationToken cancellationToken)
+    public override async IAsyncEnumerable<FinalizingDataObject> GetTypedDataAsync(
+        DataObjectCacheWriteArguments? dataObjectRunArguments,
+        [EnumeratorCancellation] CancellationToken cancellationToken)
     {
         while (true)
         {
-            var response = new ApiResponse<PaginatedResponse<FinalizingDataObject>>();
-            // If the FinalizingDataObject does not have the same structure as the Finalizing response from the API, create a new class for it and replace FinalizingDataObject with it.
-            // Example:
-            // var response = new ApiResponse<IEnumerable<FinalizingResponse>>();
-
-            // Make a call to your API/system to retrieve the objects/type for the connector's configuration.
+            ApiResponse<PaginatedResponse<FinalizingDataObject>> response;
+            
             try
             {
-                //response = await _apiClient.GetRecords<FinalizingDataObject>(
-                //    relativeUrl: "finalizings",
-                //    page: _currentPage,
-                //    cancellationToken: cancellationToken)
-                //    .ConfigureAwait(false);
+                response = await _apiClient.GetRecords<FinalizingDataObject>(
+                    relativeUrl: "sessions/finalizing",
+                    page: _currentPage,
+                    cancellationToken: cancellationToken)
+                    .ConfigureAwait(false);
             }
             catch (HttpRequestException exception)
             {
-                _logger.LogError(exception, "Exception while making a read request to data object 'FinalizingDataObject'");
+                _logger.LogError(exception, "Exception while retrieving finalizing sessions");
                 throw;
             }
 
             if (!response.IsSuccessful)
             {
-                throw new Exception($"Failed to retrieve records for 'FinalizingDataObject'. API StatusCode: {response.StatusCode}");
+                throw new Exception($"Failed to retrieve finalizing sessions. API StatusCode: {response.StatusCode}");
             }
 
-            if (response.Data == null || !response.Data.Items.Any()) break;
-
-            // Return the data objects to Cache.
-            foreach (var item in response.Data.Items)
+            if (response.Data?.Items == null || !response.Data.Items.Any())
             {
-                // If new class was created to match the API response, create a new FinalizingDataObject object, map the properties and return a FinalizingDataObject.
-
-                // Example:
-                //var resource = new FinalizingDataObject
-                //{
-                //// TODO: Map properties.      
-                //};
-                //yield return resource;
-                yield return item;
+                yield break;
             }
 
-            // Handle pagination per API client design
+            foreach (var session in response.Data.Items)
+            {
+                yield return session;
+            }
+
             _currentPage++;
             if (_currentPage >= response.Data.TotalPages)
             {

@@ -16,67 +16,86 @@ namespace Connector.Sessions.v1.User.Invite;
 public class InviteUserHandler : IActionHandler<InviteUserAction>
 {
     private readonly ILogger<InviteUserHandler> _logger;
+    private readonly ApiClient _apiClient;
 
     public InviteUserHandler(
-        ILogger<InviteUserHandler> logger)
+        ILogger<InviteUserHandler> logger,
+        ApiClient apiClient)
     {
         _logger = logger;
+        _apiClient = apiClient;
     }
     
     public async Task<ActionHandlerOutcome> HandleQueuedActionAsync(ActionInstance actionInstance, CancellationToken cancellationToken)
     {
         var input = JsonSerializer.Deserialize<InviteUserActionInput>(actionInstance.InputJson);
+        if (input == null)
+        {
+            return ActionHandlerOutcome.Failed(new StandardActionFailure
+            {
+                Code = "400",
+                Errors = new[] { new Xchange.Connector.SDK.Action.Error
+                {
+                    Source = new[] { "InviteUserHandler" },
+                    Text = "Invalid input: Failed to deserialize action input"
+                }}
+            });
+        }
+
         try
         {
-            // Given the input for the action, make a call to your API/system
-            var response = new ApiResponse<InviteUserActionOutput>();
-            // response = await _apiClient.PostUserDataObject(input, cancellationToken)
-            // .ConfigureAwait(false);
+            var response = await _apiClient.InviteUser(input, cancellationToken);
 
-            // The full record is needed for SyncOperations. If the endpoint used for the action returns a partial record (such as only returning the ID) then you can either:
-            // - Make a GET call using the ID that was returned
-            // - Add the ID property to your action input (Assuming this results in the proper data object shape)
+            if (!response.IsSuccessful)
+            {
+                return ActionHandlerOutcome.Failed(new StandardActionFailure
+                {
+                    Code = response.StatusCode.ToString(),
+                    Errors = new[]
+                    {
+                        new Xchange.Connector.SDK.Action.Error
+                        {
+                            Source = new[] { "InviteUserHandler" },
+                            Text = "Failed to invite user"
+                        }
+                    }
+                });
+            }
 
-            // var resource = await _apiClient.GetUserDataObject(response.Data.id, cancellationToken);
+            var output = new InviteUserActionOutput();
+            var userData = new UserDataObject
+            {
+                Email = input.Email,
+                SessionId = input.SessionId,
+                Message = input.Message,
+                InvitationStatus = "Invited",
+                InvitationTime = System.DateTime.UtcNow
+            };
 
-            // var resource = new InviteUserActionOutput
-            // {
-            //      TODO : map
-            // };
-
-            // If the response is already the output object for the action, you can use the response directly
-
-            // Build sync operations to update the local cache as well as the Xchange cache system (if the data type is cached)
-            // For more information on SyncOperations and the KeyResolver, check: https://trimble-xchange.github.io/connector-docs/guides/creating-actions/#keyresolver-and-the-sync-cache-operations
             var operations = new List<SyncOperation>();
             var keyResolver = new DefaultDataObjectKey();
-            var key = keyResolver.BuildKeyResolver()(response.Data);
-            operations.Add(SyncOperation.CreateSyncOperation(UpdateOperation.Upsert.ToString(), key.UrlPart, key.PropertyNames, response.Data));
+            var key = keyResolver.BuildKeyResolver()(userData);
+            operations.Add(SyncOperation.CreateSyncOperation(UpdateOperation.Upsert.ToString(), key.UrlPart, key.PropertyNames, userData));
 
             var resultList = new List<CacheSyncCollection>
             {
-                new CacheSyncCollection() { DataObjectType = typeof(UserDataObject), CacheChanges = operations.ToArray() }
+                new() { DataObjectType = typeof(UserDataObject), CacheChanges = operations.ToArray() }
             };
 
-            return ActionHandlerOutcome.Successful(response.Data, resultList);
+            return ActionHandlerOutcome.Successful(output, resultList);
         }
         catch (HttpRequestException exception)
         {
-            // If an error occurs, we want to create a failure result for the action that matches
-            // the failure type for the action. 
-            // Common to create extension methods to map to Standard Action Failure
-
-            var errorSource = new List<string> { "InviteUserHandler" };
-            if (string.IsNullOrEmpty(exception.Source)) errorSource.Add(exception.Source!);
+            _logger.LogError(exception, "Failed to invite user");
             
             return ActionHandlerOutcome.Failed(new StandardActionFailure
             {
                 Code = exception.StatusCode?.ToString() ?? "500",
-                Errors = new []
+                Errors = new[]
                 {
                     new Xchange.Connector.SDK.Action.Error
                     {
-                        Source = errorSource.ToArray(),
+                        Source = new[] { "InviteUserHandler" },
                         Text = exception.Message
                     }
                 }

@@ -14,10 +14,10 @@ using Xchange.Connector.SDK.Action;
 /// are properly formed. The schema also helps provide integrators more information for what the values 
 /// are intended to be.
 /// </summary>
-[Description("InviteUserAction Action description goes here")]
+[Description("Invites a user to join a Bluebeam Studio Session")]
 public class InviteUserAction : IStandardAction<InviteUserActionInput, InviteUserActionOutput>
 {
-    public InviteUserActionInput ActionInput { get; set; } = new();
+    public InviteUserActionInput ActionInput { get; set; } = new() { Email = string.Empty, SessionId = string.Empty };
     public InviteUserActionOutput ActionOutput { get; set; } = new();
     public StandardActionFailure ActionFailure { get; set; } = new();
 
@@ -26,11 +26,24 @@ public class InviteUserAction : IStandardAction<InviteUserActionInput, InviteUse
 
 public class InviteUserActionInput
 {
+    [JsonPropertyName("sessionId")]
+    [Description("The ID of the session to invite the user to")]
+    [Required]
+    public required string SessionId { get; init; }
 
+    [JsonPropertyName("email")]
+    [Description("Email address to send invitation to")]
+    [Required]
+    public required string Email { get; init; }
+
+    [JsonPropertyName("message")]
+    [Description("Custom message that will display in the email")]
+    public string? Message { get; init; }
 }
 
 public class InviteUserActionOutput
 {
-    [JsonPropertyName("id")]
-    public Guid Id { get; set; }
+    [JsonPropertyName("status")]
+    [Description("The status of the invitation")]
+    public string Status { get; init; } = "Invited";
 }

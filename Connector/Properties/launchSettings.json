@@ -1,7 +1,10 @@
 {
   "profiles": {
     "Connector": {
-      "commandName": "Project"
+      "commandName": "Project",
+      "environmentVariables": {
+        "DOTNET_ENVIRONMENT": "Development"
+      }
     },
     "Action Processor Local Development": {
       "commandName": "Project",
@@ -26,6 +29,132 @@
         "DIFFYCACHE_DBLOCATION": "./databases",
         "ESR__QueueName": "localrun"
       }
+    },
+    "InitializeSession": {
+      "commandName": "Project",
+      "environmentVariables": {
+        "DOTNET_ENVIRONMENT": "Development"
+      },
+      "commandLineArgs": "--isLocal true --moduleId sessions-1 --serviceType ActionProcessor --actionUrl initialize --dataObjectUrl session"
+    },
+    "CreateMetadataBlock": {
+      "commandName": "Project",
+      "environmentVariables": {
+        "DOTNET_ENVIRONMENT": "Development"
+      },
+      "commandLineArgs": "--isLocal true --moduleId sessions-1 --serviceType ActionProcessor --actionUrl create --dataObjectUrl metadata-block"
+    },
+    "ConfirmUpload": {
+      "commandName": "Project",
+      "environmentVariables": {
+        "DOTNET_ENVIRONMENT": "Development"
+      },
+      "commandLineArgs": "--isLocal true --moduleId sessions-1 --serviceType ActionProcessor --actionUrl confirm-upload --dataObjectUrl confirm-upload"
+    },
+    "InviteUser": {
+      "commandName": "Project",
+      "environmentVariables": {
+        "DOTNET_ENVIRONMENT": "Development"
+      },
+      "commandLineArgs": "--isLocal true --moduleId sessions-1 --serviceType ActionProcessor --actionUrl invite --dataObjectUrl user"
+    },
+    "AddUser": {
+      "commandName": "Project",
+      "environmentVariables": {
+        "DOTNET_ENVIRONMENT": "Development"
+      },
+      "commandLineArgs": "--isLocal true --moduleId sessions-1 --serviceType ActionProcessor --actionUrl add --dataObjectUrl user"
+    },
+    "SetStatusFinalizing": {
+      "commandName": "Project",
+      "environmentVariables": {
+        "DOTNET_ENVIRONMENT": "Development"
+      },
+      "commandLineArgs": "--isLocal true --moduleId sessions-1 --serviceType ActionProcessor --actionUrl set-status --dataObjectUrl finalizing"
+    },
+    "CreateSnapshot": {
+      "commandName": "Project",
+      "environmentVariables": {
+        "DOTNET_ENVIRONMENT": "Development"
+      },
+      "commandLineArgs": "--isLocal true --moduleId sessions-1 --serviceType ActionProcessor --actionUrl create --dataObjectUrl snapshot"
+    },
+    "GetSnapshotStatus": {
+      "commandName": "Project",
+      "environmentVariables": {
+        "DOTNET_ENVIRONMENT": "Development"
+      },
+      "commandLineArgs": "--isLocal true --moduleId sessions-1 --serviceType ActionProcessor --actionUrl get-status --dataObjectUrl download"
+    },
+    "UploadFileToAWS": {
+      "commandName": "Project",
+      "environmentVariables": {
+        "DOTNET_ENVIRONMENT": "Development"
+      },
+      "commandLineArgs": "--isLocal true --moduleId sessions-1 --serviceType ActionProcessor --actionUrl upload --dataObjectUrl file-to-aws"
+    },
+    "DeleteSession": {
+      "commandName": "Project",
+      "environmentVariables": {
+        "DOTNET_ENVIRONMENT": "Development"
+      },
+      "commandLineArgs": "--isLocal true --moduleId sessions-1 --serviceType ActionProcessor --actionUrl delete --dataObjectUrl session"
+    },
+    "GetSubscriptions": {
+      "commandName": "Project",
+      "environmentVariables": {
+        "DOTNET_ENVIRONMENT": "Development"
+      },
+      "commandLineArgs": "--isLocal true --moduleId notifications-1 --serviceType ActionProcessor --actionUrl get --dataObjectUrl subscriptions"
+    },
+    "GetSubscription": {
+      "commandName": "Project",
+      "environmentVariables": {
+        "DOTNET_ENVIRONMENT": "Development"
+      },
+      "commandLineArgs": "--isLocal true --moduleId notifications-1 --serviceType ActionProcessor --actionUrl get --dataObjectUrl subscription"
+    },
+    "SubscribeStudioProject": {
+      "commandName": "Project",
+      "environmentVariables": {
+        "DOTNET_ENVIRONMENT": "Development"
+      },
+      "commandLineArgs": "--isLocal true --moduleId notifications-1 --serviceType ActionProcessor --actionUrl subscribe-studio-project --dataObjectUrl subscription"
+    },
+    "SubscribeFileFolder": {
+      "commandName": "Project",
+      "environmentVariables": {
+        "DOTNET_ENVIRONMENT": "Development"
+      },
+      "commandLineArgs": "--isLocal true --moduleId notifications-1 --serviceType ActionProcessor --actionUrl subscribe-file-folder --dataObjectUrl subscription"
+    },
+    "SubscribeStudioSession": {
+      "commandName": "Project",
+      "environmentVariables": {
+        "DOTNET_ENVIRONMENT": "Development"
+      },
+      "commandLineArgs": "--isLocal true --moduleId notifications-1 --serviceType ActionProcessor --actionUrl subscribe-studio-session --dataObjectUrl subscription"
+    },
+    "SubscribeDocument": {
+      "commandName": "Project",
+      "environmentVariables": {
+        "DOTNET_ENVIRONMENT": "Development"
+      },
+      "commandLineArgs": "--isLocal true --moduleId notifications-1 --serviceType ActionProcessor --actionUrl subscribe-document --dataObjectUrl subscription"
+    },
+    "DeleteSubscription": {
+      "commandName": "Project",
+      "environmentVariables": {
+        "DOTNET_ENVIRONMENT": "Development"
+      },
+      "commandLineArgs": "--isLocal true --moduleId notifications-1 --serviceType ActionProcessor --actionUrl delete --dataObjectUrl subscription"
+    },
+    "CreateComprehensiveSubscription": {
+      "commandName": "Project",
+      "environmentVariables": {
+        "DOTNET_ENVIRONMENT": "Development"
+      },
+      "commandLineArgs": "--isLocal true --moduleId notifications-1 --serviceType ActionProcessor --actionUrl create --dataObjectUrl comprehensive-subscription"
     }
   }
 }

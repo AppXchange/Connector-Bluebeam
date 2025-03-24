@@ -14,60 +14,54 @@ namespace Connector.Sessions.v1.ConfirmUpload;
 public class ConfirmUploadDataReader : TypedAsyncDataReaderBase<ConfirmUploadDataObject>
 {
     private readonly ILogger<ConfirmUploadDataReader> _logger;
+    private readonly ApiClient _apiClient;
     private int _currentPage = 0;
 
     public ConfirmUploadDataReader(
-        ILogger<ConfirmUploadDataReader> logger)
+        ILogger<ConfirmUploadDataReader> logger,
+        ApiClient apiClient)
     {
         _logger = logger;
+        _apiClient = apiClient;
     }
 
-    public override async IAsyncEnumerable<ConfirmUploadDataObject> GetTypedDataAsync(DataObjectCacheWriteArguments ? dataObjectRunArguments, [EnumeratorCancellation] CancellationToken cancellationToken)
+    public override async IAsyncEnumerable<ConfirmUploadDataObject> GetTypedDataAsync(
+        DataObjectCacheWriteArguments? dataObjectRunArguments,
+        [EnumeratorCancellation] CancellationToken cancellationToken)
     {
         while (true)
         {
-            var response = new ApiResponse<PaginatedResponse<ConfirmUploadDataObject>>();
-            // If the ConfirmUploadDataObject does not have the same structure as the ConfirmUpload response from the API, create a new class for it and replace ConfirmUploadDataObject with it.
-            // Example:
-            // var response = new ApiResponse<IEnumerable<ConfirmUploadResponse>>();
-
-            // Make a call to your API/system to retrieve the objects/type for the connector's configuration.
+            ApiResponse<PaginatedResponse<ConfirmUploadDataObject>> response;
+            
             try
             {
-                //response = await _apiClient.GetRecords<ConfirmUploadDataObject>(
-                //    relativeUrl: "confirmUploads",
-                //    page: _currentPage,
-                //    cancellationToken: cancellationToken)
-                //    .ConfigureAwait(false);
+                response = await _apiClient.GetRecords<ConfirmUploadDataObject>(
+                    relativeUrl: "sessions/files/confirmed",
+                    page: _currentPage,
+                    cancellationToken: cancellationToken)
+                    .ConfigureAwait(false);
             }
             catch (HttpRequestException exception)
             {
-                _logger.LogError(exception, "Exception while making a read request to data object 'ConfirmUploadDataObject'");
+                _logger.LogError(exception, "Exception while retrieving confirmed uploads");
                 throw;
             }
 
             if (!response.IsSuccessful)
             {
-                throw new Exception($"Failed to retrieve records for 'ConfirmUploadDataObject'. API StatusCode: {response.StatusCode}");
+                throw new Exception($"Failed to retrieve confirmed uploads. API StatusCode: {response.StatusCode}");
             }
 
-            if (response.Data == null || !response.Data.Items.Any()) break;
-
-            // Return the data objects to Cache.
-            foreach (var item in response.Data.Items)
+            if (response.Data?.Items == null || !response.Data.Items.Any())
             {
-                // If new class was created to match the API response, create a new ConfirmUploadDataObject object, map the properties and return a ConfirmUploadDataObject.
-
-                // Example:
-                //var resource = new ConfirmUploadDataObject
-                //{
-                //// TODO: Map properties.      
-                //};
-                //yield return resource;
-                yield return item;
+                yield break;
             }
 
-            // Handle pagination per API client design
+            foreach (var confirmation in response.Data.Items)
+            {
+                yield return confirmation;
+            }
+
             _currentPage++;
             if (_currentPage >= response.Data.TotalPages)
             {

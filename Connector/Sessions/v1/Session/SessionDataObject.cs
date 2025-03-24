@@ -1,24 +1,49 @@
-namespace Connector.Sessions.v1.Session;
-
 using Json.Schema.Generation;
 using System;
+using System.Collections.Generic;
 using System.Text.Json.Serialization;
 using Xchange.Connector.SDK.CacheWriter;
 
-/// <summary>
-/// Data object that will represent an object in the Xchange system. This will be converted to a JsonSchema, 
-/// so add attributes to the properties to provide any descriptions, titles, ranges, max, min, etc... 
-/// These types will be used for validation at runtime to make sure the objects being passed through the system 
-/// are properly formed. The schema also helps provide integrators more information for what the values 
-/// are intended to be.
-/// </summary>
+namespace Connector.Sessions.v1.Session;
+
 [PrimaryKey("id", nameof(Id))]
-//[AlternateKey("alt-key-id", nameof(CompanyId), nameof(EquipmentNumber))]
-[Description("Example description of the object.")]
+[Description("Represents a Bluebeam Studio Session")]
 public class SessionDataObject
 {
     [JsonPropertyName("id")]
-    [Description("Example primary key of the object")]
+    [Description("The unique identifier for the session")]
     [Required]
-    public required Guid Id { get; init; }
+    public required string Id { get; init; }
+
+    [JsonPropertyName("name")]
+    [Description("The name of the session")]
+    [Required]
+    public required string Name { get; init; }
+
+    [JsonPropertyName("notification")]
+    [Description("Whether the current user will be subscribed to email notifications")]
+    public bool Notification { get; init; }
+
+    [JsonPropertyName("restricted")]
+    [Description("Whether the session is restricted to invited users only")]
+    public bool Restricted { get; init; }
+
+    [JsonPropertyName("sessionEndDate")]
+    [Description("The date when the session will end")]
+    public DateTime? SessionEndDate { get; init; }
+
+    [JsonPropertyName("defaultPermissions")]
+    [Description("Default permissions for session attendees")]
+    public List<SessionPermission> DefaultPermissions { get; init; } = new();
+}
+
+public class SessionPermission
+{
+    [JsonPropertyName("type")]
+    [Description("The type of permission")]
+    public required string Type { get; init; }
+
+    [JsonPropertyName("allow")]
+    [Description("The permission state (Allow, Deny, Default)")]
+    public required string Allow { get; init; }
 }

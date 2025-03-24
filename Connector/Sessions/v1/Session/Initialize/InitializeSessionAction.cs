@@ -1,36 +1,47 @@
-namespace Connector.Sessions.v1.Session.Initialize;
-
 using Json.Schema.Generation;
 using System;
+using System.Collections.Generic;
 using System.Text.Json.Serialization;
 using Xchange.Connector.SDK.Action;
 
-/// <summary>
-/// Action object that will represent an action in the Xchange system. This will contain an input object type,
-/// an output object type, and a Action failure type (this will default to <see cref="StandardActionFailure"/>
-/// but that can be overridden with your own preferred type). These objects will be converted to a JsonSchema, 
-/// so add attributes to the properties to provide any descriptions, titles, ranges, max, min, etc... 
-/// These types will be used for validation at runtime to make sure the objects being passed through the system 
-/// are properly formed. The schema also helps provide integrators more information for what the values 
-/// are intended to be.
-/// </summary>
-[Description("InitializeSessionAction Action description goes here")]
+namespace Connector.Sessions.v1.Session.Initialize;
+
+[Description("Initializes a new Bluebeam Studio Session")]
 public class InitializeSessionAction : IStandardAction<InitializeSessionActionInput, InitializeSessionActionOutput>
 {
-    public InitializeSessionActionInput ActionInput { get; set; } = new();
-    public InitializeSessionActionOutput ActionOutput { get; set; } = new();
+    public InitializeSessionActionInput ActionInput { get; set; } = new() { Name = string.Empty };
+    public InitializeSessionActionOutput ActionOutput { get; set; } = new() { Id = string.Empty };
     public StandardActionFailure ActionFailure { get; set; } = new();
-
     public bool CreateRtap => true;
 }
 
 public class InitializeSessionActionInput
 {
+    [JsonPropertyName("name")]
+    [Description("The name of the session")]
+    [Required]
+    public required string Name { get; init; }
 
+    [JsonPropertyName("notification")]
+    [Description("Whether to subscribe to email notifications")]
+    public bool Notification { get; init; }
+
+    [JsonPropertyName("restricted")]
+    [Description("Whether to restrict the session to invited users only")]
+    public bool Restricted { get; init; }
+
+    [JsonPropertyName("sessionEndDate")]
+    [Description("The date when the session will end (UTC)")]
+    public DateTime? SessionEndDate { get; init; }
+
+    [JsonPropertyName("defaultPermissions")]
+    [Description("Default permissions for session attendees")]
+    public List<SessionPermission> DefaultPermissions { get; init; } = new();
 }
 
 public class InitializeSessionActionOutput
 {
     [JsonPropertyName("id")]
-    public Guid Id { get; set; }
+    [Description("The unique identifier of the created session")]
+    public required string Id { get; init; }
 }

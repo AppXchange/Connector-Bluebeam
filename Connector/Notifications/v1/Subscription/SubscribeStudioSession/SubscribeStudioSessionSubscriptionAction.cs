@@ -14,10 +14,10 @@ using Xchange.Connector.SDK.Action;
 /// are properly formed. The schema also helps provide integrators more information for what the values 
 /// are intended to be.
 /// </summary>
-[Description("SubscribeStudioSessionSubscriptionAction Action description goes here")]
+[Description("Subscribe to notifications for a Bluebeam Studio Session")]
 public class SubscribeStudioSessionSubscriptionAction : IStandardAction<SubscribeStudioSessionSubscriptionActionInput, SubscribeStudioSessionSubscriptionActionOutput>
 {
-    public SubscribeStudioSessionSubscriptionActionInput ActionInput { get; set; } = new();
+    public SubscribeStudioSessionSubscriptionActionInput ActionInput { get; set; } = new() { SessionId = string.Empty, Uri = string.Empty };
     public SubscribeStudioSessionSubscriptionActionOutput ActionOutput { get; set; } = new();
     public StandardActionFailure ActionFailure { get; set; } = new();
 
@@ -26,11 +26,53 @@ public class SubscribeStudioSessionSubscriptionAction : IStandardAction<Subscrib
 
 public class SubscribeStudioSessionSubscriptionActionInput
 {
+    [JsonPropertyName("parentResourceType")]
+    [Description("The parent object type for the subscription (Sessions)")]
+    [Required]
+    public string ParentResourceType { get; init; } = "Sessions";
 
+    [JsonPropertyName("sessionId")]
+    [Description("9-digit ID for the Studio Session")]
+    [Required]
+    public required string SessionId { get; init; }
+
+    [JsonPropertyName("uri")]
+    [Description("The callback URI where notifications will be sent")]
+    [Required]
+    public required string Uri { get; init; }
 }
 
 public class SubscribeStudioSessionSubscriptionActionOutput
 {
-    [JsonPropertyName("id")]
-    public Guid Id { get; set; }
+    [JsonPropertyName("$id")]
+    [Description("The unique identifier for the response")]
+    public string Id { get; init; } = string.Empty;
+
+    [JsonPropertyName("endpointId")]
+    [Description("The endpoint identifier")]
+    public int EndpointId { get; init; }
+
+    [JsonPropertyName("resource")]
+    [Description("The resource path")]
+    public string Resource { get; init; } = string.Empty;
+
+    [JsonPropertyName("source")]
+    [Description("The source of the subscription")]
+    public string Source { get; init; } = string.Empty;
+
+    [JsonPropertyName("status")]
+    [Description("The status of the subscription")]
+    public string Status { get; init; } = string.Empty;
+
+    [JsonPropertyName("subscriptionId")]
+    [Description("The subscription identifier")]
+    public int SubscriptionId { get; init; }
+
+    [JsonPropertyName("uri")]
+    [Description("The callback URI")]
+    public string Uri { get; init; } = string.Empty;
+
+    [JsonPropertyName("key")]
+    [Description("The subscription key")]
+    public string Key { get; init; } = string.Empty;
 }

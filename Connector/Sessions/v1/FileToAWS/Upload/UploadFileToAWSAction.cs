@@ -14,10 +14,10 @@ using Xchange.Connector.SDK.Action;
 /// are properly formed. The schema also helps provide integrators more information for what the values 
 /// are intended to be.
 /// </summary>
-[Description("UploadFileToAWSAction Action description goes here")]
+[Description("Uploads a file to AWS using a pre-signed URL")]
 public class UploadFileToAWSAction : IStandardAction<UploadFileToAWSActionInput, UploadFileToAWSActionOutput>
 {
-    public UploadFileToAWSActionInput ActionInput { get; set; } = new();
+    public UploadFileToAWSActionInput ActionInput { get; set; } = new() { UploadUrl = string.Empty, FileUrl = string.Empty };
     public UploadFileToAWSActionOutput ActionOutput { get; set; } = new();
     public StandardActionFailure ActionFailure { get; set; } = new();
 
@@ -26,11 +26,20 @@ public class UploadFileToAWSAction : IStandardAction<UploadFileToAWSActionInput,
 
 public class UploadFileToAWSActionInput
 {
+    [JsonPropertyName("uploadUrl")]
+    [Description("The pre-signed AWS URL to upload the file to")]
+    [Required]
+    public required string UploadUrl { get; init; }
 
+    [JsonPropertyName("fileUrl")]
+    [Description("The URL of the file to upload")]
+    [Required]
+    public required string FileUrl { get; init; }
 }
 
 public class UploadFileToAWSActionOutput
 {
-    [JsonPropertyName("id")]
-    public Guid Id { get; set; }
+    [JsonPropertyName("success")]
+    [Description("Whether the upload was successful")]
+    public bool Success { get; init; }
 }

@@ -14,23 +14,51 @@ using Xchange.Connector.SDK.Action;
 /// are properly formed. The schema also helps provide integrators more information for what the values 
 /// are intended to be.
 /// </summary>
-[Description("CreateMetadataBlockAction Action description goes here")]
+[Description("Creates a metadata block for a file in a Bluebeam Studio Session")]
 public class CreateMetadataBlockAction : IStandardAction<CreateMetadataBlockActionInput, CreateMetadataBlockActionOutput>
 {
-    public CreateMetadataBlockActionInput ActionInput { get; set; } = new();
-    public CreateMetadataBlockActionOutput ActionOutput { get; set; } = new();
+    public CreateMetadataBlockActionInput ActionInput { get; set; } = new() { Name = string.Empty, SessionId = string.Empty };
+    public CreateMetadataBlockActionOutput ActionOutput { get; set; } = new() { Id = 0 };
     public StandardActionFailure ActionFailure { get; set; } = new();
-
     public bool CreateRtap => true;
 }
 
 public class CreateMetadataBlockActionInput
 {
+    [JsonPropertyName("sessionId")]
+    [Description("The ID of the session to add the file to")]
+    [Required]
+    public required string SessionId { get; init; }
 
+    [JsonPropertyName("name")]
+    [Description("Name of the file (must end in .pdf)")]
+    [Required]
+    public required string Name { get; init; }
+
+    [JsonPropertyName("source")]
+    [Description("Source path of the file")]
+    public string? Source { get; init; }
+
+    [JsonPropertyName("size")]
+    [Description("File size (optional)")]
+    public int? Size { get; init; }
+
+    [JsonPropertyName("crc")]
+    [Description("CRC value (optional)")]
+    public string? CRC { get; init; }
 }
 
 public class CreateMetadataBlockActionOutput
 {
     [JsonPropertyName("id")]
-    public Guid Id { get; set; }
+    [Description("The unique identifier of the created metadata block")]
+    public required int Id { get; init; }
+
+    [JsonPropertyName("uploadUrl")]
+    [Description("URL for uploading the file")]
+    public string? UploadUrl { get; init; }
+
+    [JsonPropertyName("uploadContentType")]
+    [Description("Content type for the upload")]
+    public string? UploadContentType { get; init; }
 }

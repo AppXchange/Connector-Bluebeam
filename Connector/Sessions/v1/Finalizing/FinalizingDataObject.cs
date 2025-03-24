@@ -12,13 +12,21 @@ using Xchange.Connector.SDK.CacheWriter;
 /// are properly formed. The schema also helps provide integrators more information for what the values 
 /// are intended to be.
 /// </summary>
-[PrimaryKey("id", nameof(Id))]
-//[AlternateKey("alt-key-id", nameof(CompanyId), nameof(EquipmentNumber))]
-[Description("Example description of the object.")]
+[PrimaryKey("sessionId", nameof(SessionId))]
+[Description("Represents a Bluebeam Studio Session's finalizing status")]
 public class FinalizingDataObject
 {
-    [JsonPropertyName("id")]
-    [Description("Example primary key of the object")]
+    [JsonPropertyName("sessionId")]
+    [Description("The ID of the session being finalized")]
     [Required]
-    public required Guid Id { get; init; }
+    public required string SessionId { get; init; }
+
+    [JsonPropertyName("status")]
+    [Description("The status of the session")]
+    [Required]
+    public required string Status { get; init; }
+
+    [JsonPropertyName("finalizingTime")]
+    [Description("The timestamp when the session was set to finalizing status")]
+    public DateTime FinalizingTime { get; init; }
 }

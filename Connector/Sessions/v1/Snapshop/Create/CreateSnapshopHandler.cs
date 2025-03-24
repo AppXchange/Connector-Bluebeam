@@ -16,67 +16,90 @@ namespace Connector.Sessions.v1.Snapshop.Create;
 public class CreateSnapshopHandler : IActionHandler<CreateSnapshopAction>
 {
     private readonly ILogger<CreateSnapshopHandler> _logger;
+    private readonly ApiClient _apiClient;
 
     public CreateSnapshopHandler(
-        ILogger<CreateSnapshopHandler> logger)
+        ILogger<CreateSnapshopHandler> logger,
+        ApiClient apiClient)
     {
         _logger = logger;
+        _apiClient = apiClient;
     }
     
     public async Task<ActionHandlerOutcome> HandleQueuedActionAsync(ActionInstance actionInstance, CancellationToken cancellationToken)
     {
         var input = JsonSerializer.Deserialize<CreateSnapshopActionInput>(actionInstance.InputJson);
+        if (input == null)
+        {
+            return ActionHandlerOutcome.Failed(new StandardActionFailure
+            {
+                Code = "400",
+                Errors = new[] { new Xchange.Connector.SDK.Action.Error
+                {
+                    Source = new[] { "CreateSnapshopHandler" },
+                    Text = "Invalid input: Failed to deserialize action input"
+                }}
+            });
+        }
+
         try
         {
-            // Given the input for the action, make a call to your API/system
-            var response = new ApiResponse<CreateSnapshopActionOutput>();
-            // response = await _apiClient.PostSnapshopDataObject(input, cancellationToken)
-            // .ConfigureAwait(false);
+            var response = await _apiClient.CreateSnapshot(input.SessionId, input.FileId, cancellationToken);
 
-            // The full record is needed for SyncOperations. If the endpoint used for the action returns a partial record (such as only returning the ID) then you can either:
-            // - Make a GET call using the ID that was returned
-            // - Add the ID property to your action input (Assuming this results in the proper data object shape)
+            if (!response.IsSuccessful)
+            {
+                return ActionHandlerOutcome.Failed(new StandardActionFailure
+                {
+                    Code = response.StatusCode.ToString(),
+                    Errors = new[]
+                    {
+                        new Xchange.Connector.SDK.Action.Error
+                        {
+                            Source = new[] { "CreateSnapshopHandler" },
+                            Text = "Failed to create snapshot"
+                        }
+                    }
+                });
+            }
 
-            // var resource = await _apiClient.GetSnapshopDataObject(response.Data.id, cancellationToken);
+            var output = new CreateSnapshopActionOutput
+            {
+                Status = "Requested",
+                StatusTime = System.DateTime.UtcNow.ToString("O")
+            };
 
-            // var resource = new CreateSnapshopActionOutput
-            // {
-            //      TODO : map
-            // };
+            var snapshopData = new SnapshopDataObject
+            {
+                SessionId = input.SessionId,
+                FileId = input.FileId,
+                Status = output.Status,
+                StatusTime = System.DateTime.Parse(output.StatusTime)
+            };
 
-            // If the response is already the output object for the action, you can use the response directly
-
-            // Build sync operations to update the local cache as well as the Xchange cache system (if the data type is cached)
-            // For more information on SyncOperations and the KeyResolver, check: https://trimble-xchange.github.io/connector-docs/guides/creating-actions/#keyresolver-and-the-sync-cache-operations
             var operations = new List<SyncOperation>();
             var keyResolver = new DefaultDataObjectKey();
-            var key = keyResolver.BuildKeyResolver()(response.Data);
-            operations.Add(SyncOperation.CreateSyncOperation(UpdateOperation.Upsert.ToString(), key.UrlPart, key.PropertyNames, response.Data));
+            var key = keyResolver.BuildKeyResolver()(snapshopData);
+            operations.Add(SyncOperation.CreateSyncOperation(UpdateOperation.Upsert.ToString(), key.UrlPart, key.PropertyNames, snapshopData));
 
             var resultList = new List<CacheSyncCollection>
             {
-                new CacheSyncCollection() { DataObjectType = typeof(SnapshopDataObject), CacheChanges = operations.ToArray() }
+                new() { DataObjectType = typeof(SnapshopDataObject), CacheChanges = operations.ToArray() }
             };
 
-            return ActionHandlerOutcome.Successful(response.Data, resultList);
+            return ActionHandlerOutcome.Successful(output, resultList);
         }
         catch (HttpRequestException exception)
         {
-            // If an error occurs, we want to create a failure result for the action that matches
-            // the failure type for the action. 
-            // Common to create extension methods to map to Standard Action Failure
-
-            var errorSource = new List<string> { "CreateSnapshopHandler" };
-            if (string.IsNullOrEmpty(exception.Source)) errorSource.Add(exception.Source!);
+            _logger.LogError(exception, "Failed to create snapshot");
             
             return ActionHandlerOutcome.Failed(new StandardActionFailure
             {
                 Code = exception.StatusCode?.ToString() ?? "500",
-                Errors = new []
+                Errors = new[]
                 {
                     new Xchange.Connector.SDK.Action.Error
                     {
-                        Source = errorSource.ToArray(),
+                        Source = new[] { "CreateSnapshopHandler" },
                         Text = exception.Message
                     }
                 }

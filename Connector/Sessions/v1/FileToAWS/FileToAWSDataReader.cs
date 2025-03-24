@@ -14,60 +14,61 @@ namespace Connector.Sessions.v1.FileToAWS;
 public class FileToAWSDataReader : TypedAsyncDataReaderBase<FileToAWSDataObject>
 {
     private readonly ILogger<FileToAWSDataReader> _logger;
+    private readonly ApiClient _apiClient;
     private int _currentPage = 0;
 
     public FileToAWSDataReader(
-        ILogger<FileToAWSDataReader> logger)
+        ILogger<FileToAWSDataReader> logger,
+        ApiClient apiClient)
     {
         _logger = logger;
+        _apiClient = apiClient;
     }
 
-    public override async IAsyncEnumerable<FileToAWSDataObject> GetTypedDataAsync(DataObjectCacheWriteArguments ? dataObjectRunArguments, [EnumeratorCancellation] CancellationToken cancellationToken)
+    public override async IAsyncEnumerable<FileToAWSDataObject> GetTypedDataAsync(
+        DataObjectCacheWriteArguments? dataObjectRunArguments,
+        [EnumeratorCancellation] CancellationToken cancellationToken)
     {
         while (true)
         {
-            var response = new ApiResponse<PaginatedResponse<FileToAWSDataObject>>();
-            // If the FileToAWSDataObject does not have the same structure as the FileToAWS response from the API, create a new class for it and replace FileToAWSDataObject with it.
-            // Example:
-            // var response = new ApiResponse<IEnumerable<FileToAWSResponse>>();
-
-            // Make a call to your API/system to retrieve the objects/type for the connector's configuration.
+            ApiResponse<PaginatedResponse<FileToAWSDataObject>> response;
+            
             try
             {
-                //response = await _apiClient.GetRecords<FileToAWSDataObject>(
-                //    relativeUrl: "fileToAWSs",
-                //    page: _currentPage,
-                //    cancellationToken: cancellationToken)
-                //    .ConfigureAwait(false);
+                response = await _apiClient.GetRecords<FileToAWSDataObject>(
+                    relativeUrl: "sessions/files/aws-uploads",
+                    page: _currentPage,
+                    cancellationToken: cancellationToken)
+                    .ConfigureAwait(false);
             }
             catch (HttpRequestException exception)
             {
-                _logger.LogError(exception, "Exception while making a read request to data object 'FileToAWSDataObject'");
+                _logger.LogError(exception, "Exception while retrieving AWS file upload data");
                 throw;
             }
 
             if (!response.IsSuccessful)
             {
-                throw new Exception($"Failed to retrieve records for 'FileToAWSDataObject'. API StatusCode: {response.StatusCode}");
+                throw new Exception($"Failed to retrieve AWS file upload data. API StatusCode: {response.StatusCode}");
             }
 
-            if (response.Data == null || !response.Data.Items.Any()) break;
-
-            // Return the data objects to Cache.
-            foreach (var item in response.Data.Items)
+            if (response.Data?.Items == null || !response.Data.Items.Any())
             {
-                // If new class was created to match the API response, create a new FileToAWSDataObject object, map the properties and return a FileToAWSDataObject.
-
-                // Example:
-                //var resource = new FileToAWSDataObject
-                //{
-                //// TODO: Map properties.      
-                //};
-                //yield return resource;
-                yield return item;
+                yield break;
             }
 
-            // Handle pagination per API client design
+            foreach (var upload in response.Data.Items)
+            {
+                if (upload.Status != null)
+                {
+                    yield return upload;
+                }
+                else
+                {
+                    _logger.LogWarning("Skipping upload record with null status");
+                }
+            }
+
             _currentPage++;
             if (_currentPage >= response.Data.TotalPages)
             {

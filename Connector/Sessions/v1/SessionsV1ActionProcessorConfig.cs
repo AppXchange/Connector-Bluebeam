@@ -5,6 +5,7 @@ using Connector.Sessions.v1.MetadataBlock.Create;
 using Connector.Sessions.v1.Session.Delete;
 using Connector.Sessions.v1.Session.Initialize;
 using Connector.Sessions.v1.Snapshop.Create;
+using Connector.Sessions.v1.User.Add;
 using Connector.Sessions.v1.User.Invite;
 using Json.Schema.Generation;
 using Xchange.Connector.SDK.Action;
@@ -27,4 +28,5 @@ public class SessionsV1ActionProcessorConfig
     public DefaultActionHandlerConfig SetStatusFinalizingConfig { get; set; } = new();
     public DefaultActionHandlerConfig CreateSnapshopConfig { get; set; } = new();
     public DefaultActionHandlerConfig DeleteSessionConfig { get; set; } = new();
+    public DefaultActionHandlerConfig AddUserConfig { get; set; } = new();
 }

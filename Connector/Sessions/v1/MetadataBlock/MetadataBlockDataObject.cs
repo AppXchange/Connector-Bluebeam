@@ -14,11 +14,36 @@ using Xchange.Connector.SDK.CacheWriter;
 /// </summary>
 [PrimaryKey("id", nameof(Id))]
 //[AlternateKey("alt-key-id", nameof(CompanyId), nameof(EquipmentNumber))]
-[Description("Example description of the object.")]
+[Description("Represents a Bluebeam Studio Session file metadata block")]
 public class MetadataBlockDataObject
 {
     [JsonPropertyName("id")]
-    [Description("Example primary key of the object")]
+    [Description("The unique identifier for the metadata block")]
     [Required]
-    public required Guid Id { get; init; }
+    public required int Id { get; init; }
+
+    [JsonPropertyName("name")]
+    [Description("Name of the file (must end in .pdf)")]
+    [Required]
+    public required string Name { get; init; }
+
+    [JsonPropertyName("source")]
+    [Description("Source path of the file")]
+    public string? Source { get; init; }
+
+    [JsonPropertyName("size")]
+    [Description("File size (optional, server will calculate if null)")]
+    public int? Size { get; init; }
+
+    [JsonPropertyName("crc")]
+    [Description("CRC value (optional, server will calculate if null)")]
+    public string? CRC { get; init; }
+
+    [JsonPropertyName("uploadUrl")]
+    [Description("URL for uploading the file")]
+    public string? UploadUrl { get; init; }
+
+    [JsonPropertyName("uploadContentType")]
+    [Description("Content type for the upload")]
+    public string? UploadContentType { get; init; }
 }
